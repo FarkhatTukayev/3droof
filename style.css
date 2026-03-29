@@ -14,6 +14,37 @@
     --shadow-glass: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
     --radius: 20px;
     --radius-sm: 12px;
+
+    /* Variables for glassmorphism and hovers */
+    --input-bg: #f8fafc;
+    --input-focus: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --hover-bg: #f1f5f9;
+    --error-bg: #fee2e2;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --bg-page: #0f172a;
+    --surface: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+    --input-bg: #0f172a;
+    --input-focus: #1e293b;
+    --glass-bg: rgba(30, 41, 59, 0.8);
+    --glass-bg-strong: rgba(30, 41, 59, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --hover-bg: #334155;
+    --error-bg: rgba(239, 68, 68, 0.2);
 }
 
 * {
@@ -22,12 +53,14 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', -apple-system, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--bg-page);
     color: var(--text-main);
+    color-scheme: light dark;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -138,7 +171,7 @@ input[type="number"],
 select {
     width: 100%;
     padding: 12px 14px;
-    background: #f8fafc;
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: 15px;
@@ -166,7 +199,7 @@ select {
 
 input[type="number"]:focus,
 select:focus {
-    background: #ffffff;
+    background: var(--input-focus);
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
@@ -195,7 +228,7 @@ input[type=range]::-webkit-slider-thumb {
     height: 20px;
     width: 20px;
     border-radius: 50%;
-    background: #ffffff;
+    background: var(--surface);
     border: 2px solid var(--primary);
     cursor: pointer;
     -webkit-appearance: none;
@@ -255,7 +288,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .btn-outline:hover {
-    background: #f1f5f9;
+    background: var(--hover-bg);
     box-shadow: none;
     transform: none;
 }
@@ -269,7 +302,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .visual-area {
     position: relative;
-    background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+    background: radial-gradient(circle at center, var(--surface) 0%, var(--bg-page) 100%);
     overflow: hidden;
 }
 
@@ -287,7 +320,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     bottom: 24px;
     left: 24px;
     z-index: 10;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--glass-bg);
     backdrop-filter: blur(8px);
     padding: 8px 16px;
     border-radius: 20px;
@@ -295,7 +328,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     font-weight: 500;
     color: var(--text-muted);
     box-shadow: var(--shadow-sm);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid var(--glass-border);
     pointer-events: none;
 }
 
@@ -305,10 +338,10 @@ input[type=range]::-webkit-slider-thumb:hover {
     right: 32px;
     z-index: 10;
     width: 360px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--glass-bg-strong);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     padding: 28px;
     box-shadow: var(--shadow-glass);
@@ -388,7 +421,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .dormer-item {
-    background: #f8fafc;
+    background: var(--bg-page);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 16px;
@@ -418,7 +451,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .btn-remove:hover {
-    background: #fee2e2;
+    background: var(--error-bg);
 }
 
 @media(max-width: 1024px) {
@@ -438,4 +471,19 @@ input[type=range]::-webkit-slider-thumb:hover {
         left: 24px;
         width: auto;
     }
+}
+
+.dimension-badge {
+    background: var(--glass-bg-strong);
+    color: var(--text-main);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    white-space: nowrap;
+    margin-top: -10px;
 }

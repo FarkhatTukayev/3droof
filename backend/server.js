@@ -15,14 +15,57 @@ app.post('/api/calculate', (req, res) => {
         materialPrice = 0,
         wastePct = 0,
         laborRate = 0,
-        dormers = []
+        dormers = [],
+        roofShape = 'gable'
     } = req.body;
 
     const rad = angle * Math.PI / 180;
-    const slopeLen = (width / 2) / Math.cos(rad);
-    let netArea = (length * slopeLen) * 2;
 
-    if (Array.isArray(dormers)) {
+    let netArea = 0;
+
+    // Точные математические формулы для каждого типа крыши
+    if (roofShape === 'flat') {
+        // Плоская крыша с минимальным уклоном
+        netArea = (length * width) * 1.02;
+
+    } else if (roofShape === 'mansard') {
+        // Мансардная крыша: крутой нижний скат и пологий верхний
+        const lowerPitch = Math.max(45, angle) * Math.PI / 180;
+        const upperPitch = 15 * Math.PI / 180;
+
+        let h1 = 2.5; // Примерная высота мансардного этажа
+        let inset1 = h1 / Math.tan(lowerPitch);
+        if (inset1 > Math.min(width, length) / 2.5) {
+            inset1 = Math.min(width, length) / 2.5;
+        }
+
+        const outerArea = width * length;
+        const innerWidth = Math.max(0, width - 2 * inset1);
+        const innerLength = Math.max(0, length - 2 * inset1);
+        const innerArea = innerWidth * innerLength;
+        const lowerRingArea = outerArea - innerArea;
+
+        const areaLower = lowerRingArea / Math.cos(lowerPitch);
+        const areaUpper = innerArea / Math.cos(upperPitch);
+        netArea = areaLower + areaUpper;
+
+    } else if (roofShape === 'hip') {
+        // Вальмовая крыша: 4 ската под одним углом
+        // Геометрически площадь поверхности = Площадь основания / cos(угла)
+        netArea = (length * width) / Math.cos(rad);
+
+    } else if (roofShape === 'shed') {
+        // Односкатная крыша
+        // Площадь поверхности = Площадь основания / cos(угла)
+        netArea = (length * width) / Math.cos(rad);
+
+    } else {
+        // Двускатная крыша (Gable)
+        // Площадь поверхности = Площадь основания / cos(угла)
+        netArea = (length * width) / Math.cos(rad);
+    }
+
+    if ((roofShape === 'gable' || roofShape === 'hip') && Array.isArray(dormers)) {
         dormers.forEach(d => {
             const dWidth = parseFloat(d.width) || 0;
             const dProj = parseFloat(d.projection) || 0;

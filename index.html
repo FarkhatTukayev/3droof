@@ -5,9 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>3D Калькулятор кровли PRO | Тенге</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 </head>
 
 <body>
@@ -25,7 +26,10 @@
                 <p>Архитектурный 3D-расчет сметы</p>
             </div>
         </div>
-        <button id="resetBtn" class="btn btn-outline btn-small">Сбросить настройки</button>
+        <div style="display:flex; gap:12px; margin-left:auto;">
+            <button id="themeToggle" class="btn btn-outline btn-small">🌙 Тёмная</button>
+            <button id="resetBtn" class="btn btn-outline btn-small">Сброс</button>
+        </div>
     </header>
 
     <div class="container">
@@ -34,6 +38,16 @@
             <div>
                 <div class="section-title">
                     <span>Габариты крыши</span>
+                </div>
+                <div class="form-group">
+                    <label>Тип крыши</label>
+                    <select id="roofShape" class="select-input">
+                        <option value="gable" selected>Двускатная (Gable)</option>
+                        <option value="hip">Вальмовая (Hip)</option>
+                        <option value="shed">Односкатная (Shed)</option>
+                        <option value="flat">Плоская (Flat)</option>
+                        <option value="mansard">Мансардная (Mansard)</option>
+                    </select>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
@@ -45,8 +59,9 @@
                         <input id="width" type="number" min="2" max="50" step="0.5" value="8">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Угол наклона скатов: <span id="angleVal" style="color:var(--text-main)">30</span>°</label>
+                <div class="form-group" id="angleGroup">
+                    <label><span id="angleLabelText">Угол наклона скатов:</span> <span id="angleVal"
+                            style="color:var(--text-main)">30</span>°</label>
                     <input id="angle" type="range" min="10" max="60" step="1" value="30">
                     <div class="range-labels">
                         <span>Пологая</span>
@@ -55,13 +70,13 @@
                 </div>
             </div>
 
-            <div>
+            <div id="dormerSection">
                 <div class="section-title">
                     <span>Сложные конструкции</span>
                     <button id="addDormerBtn" class="btn btn-outline btn-small">+ Добавить врезку</button>
                 </div>
                 <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-                    Опционально: Добавьте слуховые окна (кукушки) или дополнительные скаты для сложной формы крыши.
+                    Опционально: Добавьте слуховые окна или дополнительные скаты для сложной формы крыши.
                 </div>
                 <div id="dormersContainer">
                 </div>
@@ -73,12 +88,12 @@
                 </div>
                 <div class="form-group">
                     <label>Тип покрытия</label>
-                    <select id="material">
-                        <option value="4500">Металлочерепица (Эконом) — 4 500 ₸/м²</option>
-                        <option value="6000" selected>Металлочерепица (Премиум) — 6 000 ₸/м²</option>
-                        <option value="3500">Профнастил — 3 500 ₸/м²</option>
-                        <option value="12000">Мягкая кровля — 12 000 ₸/м²</option>
-                        <option value="15000">Композитная черепица — 15 000 ₸/м²</option>
+                    <select id="material" class="select-input">
+                        <option value="2000">Металлочерепица (Эконом) - 2 000 ₸/м²</option>
+                        <option value="4500" selected>Металлочерепица (Премиум) - 4 500 ₸/м²</option>
+                        <option value="1900">Профнастил - 1 900 ₸/м²</option>
+                        <option value="3500">Мягкая кровля (Битумная) - 3 500 ₸/м²</option>
+                        <option value="8500">Композитная черепица - 8 500 ₸/м²</option>
                     </select>
                 </div>
                 <div class="grid-2">
@@ -87,8 +102,8 @@
                         <input id="waste" type="number" min="0" max="50" value="15">
                     </div>
                     <div class="form-group">
-                        <label>Монтаж, ₸/м²</label>
-                        <input id="labor" type="number" min="0" step="100" value="2500">
+                        <label>Стоимость монтажа (₸/м²)</label>
+                        <input type="number" id="labor" value="3500" class="number-input" min="0" step="100">
                     </div>
                 </div>
             </div>
@@ -130,6 +145,7 @@
     </div>
 
     <script>
+        const roofShapeInput = document.getElementById('roofShape');
         const lengthInput = document.getElementById('length');
         const widthInput = document.getElementById('width');
         const angleInput = document.getElementById('angle');
@@ -142,6 +158,26 @@
         const wasteInput = document.getElementById('waste');
         const laborInput = document.getElementById('labor');
         const resetBtn = document.getElementById('resetBtn');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Theme init
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️ Светлая';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙 Тёмная';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '☀️ Светлая';
+            }
+        });
 
         const netAreaValEl = document.getElementById('netAreaVal');
         const wastePctDisplay = document.getElementById('wastePctDisplay');
@@ -165,6 +201,13 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.VSMShadowMap;
         container.appendChild(renderer.domElement);
+
+        const labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize(container.clientWidth, container.clientHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        container.appendChild(labelRenderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -201,6 +244,7 @@
         scene.add(groundObj);
 
         let roofMeshes = [];
+        let labelMeshes = [];
 
         function createGableShape(w, h) {
             const shape = new THREE.Shape();
@@ -249,11 +293,102 @@
 
             roofMeshes.forEach(m => scene.remove(m));
             roofMeshes = [];
+            labelMeshes.forEach(m => scene.remove(m));
+            labelMeshes = [];
+
+            const materialColorMap = {
+                '2000': 0x7f1d1d,
+                '4500': 0x334155,
+                '1900': 0x94a3b8,
+                '3500': 0x78350f,
+                '8500': 0x14532d
+            };
+            const roofColor = materialColorMap[materialSel.value] || 0x1e293b;
 
             const height = Math.tan(angleDeg * Math.PI / 180) * (wid / 2);
+            const shapeType = roofShapeInput.value;
 
-            const mainShape = createGableShape(wid, height);
-            const mainRoof = createRoofMesh(mainShape, len, 0x1e293b);
+            let mainRoofGeo;
+            const extrudeSettings = { depth: len, bevelEnabled: false };
+
+            if (shapeType === 'gable') {
+                const shape = createGableShape(wid, height);
+                mainRoofGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                mainRoofGeo.translate(-wid / 2, 0, -len / 2);
+            } else if (shapeType === 'shed') {
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                shape.lineTo(0, height * 2);
+                shape.lineTo(wid, 0);
+                shape.lineTo(0, 0);
+                mainRoofGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                mainRoofGeo.translate(-wid / 2, 0, -len / 2);
+            } else if (shapeType === 'flat') {
+                mainRoofGeo = new THREE.BoxGeometry(wid, 0.4, len);
+                mainRoofGeo.translate(0, 0.2, 0);
+            } else {
+                const geom = new THREE.BufferGeometry();
+                let inset1, h1, inset2, h2;
+                if (shapeType === 'hip') {
+                    inset1 = Math.min(wid, len) / 2;
+                    h1 = inset1 * Math.tan(angleDeg * Math.PI / 180);
+                    inset2 = inset1;
+                    h2 = h1;
+                } else {
+                    const lowerPitch = Math.max(45, angleDeg);
+                    const upperPitch = 15;
+                    h1 = 2.5;
+                    inset1 = h1 / Math.tan(lowerPitch * Math.PI / 180);
+                    if (inset1 > Math.min(wid, len) / 2.5) {
+                        inset1 = Math.min(wid, len) / 2.5;
+                        h1 = inset1 * Math.tan(lowerPitch * Math.PI / 180);
+                    }
+                    inset2 = Math.min(wid, len) / 2;
+                    h2 = h1 + (inset2 - inset1) * Math.tan(upperPitch * Math.PI / 180);
+                }
+                const w2 = wid / 2; const l2 = len / 2;
+                const v = new Float32Array([
+                    -w2, 0, -l2, w2, 0, -l2, w2, 0, l2, -w2, 0, l2,
+                    -w2 + inset1, h1, -l2 + inset1, w2 - inset1, h1, -l2 + inset1, w2 - inset1, h1, l2 - inset1, -w2 + inset1, h1, l2 - inset1,
+                    -w2 + inset2, h2, -l2 + inset2, w2 - inset2, h2, -l2 + inset2, w2 - inset2, h2, l2 - inset2, -w2 + inset2, h2, l2 - inset2,
+                ]);
+                geom.setAttribute('position', new THREE.BufferAttribute(v, 3));
+                let indices = [
+                    0, 5, 1, 0, 4, 5,
+                    1, 6, 2, 1, 5, 6,
+                    2, 7, 3, 2, 6, 7,
+                    3, 4, 0, 3, 7, 4
+                ];
+                if (shapeType === 'mansard') {
+                    indices.push(
+                        4, 9, 5, 4, 8, 9,
+                        5, 10, 6, 5, 9, 10,
+                        6, 11, 7, 6, 10, 11,
+                        7, 8, 4, 7, 11, 8,
+                        8, 10, 9, 8, 11, 10
+                    );
+                } else {
+                    indices.push(4, 6, 5, 4, 7, 6);
+                }
+                geom.setIndex(indices);
+                geom.computeVertexNormals();
+                mainRoofGeo = geom;
+            }
+
+            const material = new THREE.MeshStandardMaterial({
+                color: roofColor,
+                roughness: 0.7,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+            const mainRoof = new THREE.Mesh(mainRoofGeo, material);
+            mainRoof.castShadow = true;
+            mainRoof.receiveShadow = true;
+
+            const edges = new THREE.EdgesGeometry(mainRoofGeo);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true }));
+            mainRoof.add(line);
+
             scene.add(mainRoof);
             roofMeshes.push(mainRoof);
 
@@ -266,29 +401,48 @@
             scene.add(baseMesh);
             roofMeshes.push(baseMesh);
 
-            dormerConfig.forEach((dormer) => {
-                const dHeight = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
-                const dShape = createGableShape(dormer.width, dHeight);
-                const dExtrusion = dormer.projection + (wid / 2);
+            const lengthDiv = document.createElement('div');
+            lengthDiv.className = 'dimension-badge';
+            lengthDiv.textContent = `${len} м`;
+            const lengthLabel = new THREE.CSS2DObject(lengthDiv);
+            lengthLabel.position.set(wid / 2 + 0.1, -2.5, 0);
+            scene.add(lengthLabel);
+            labelMeshes.push(lengthLabel);
 
-                const dRoof = createRoofMesh(dShape, dExtrusion, 0x334155);
+            const widthDiv = document.createElement('div');
+            widthDiv.className = 'dimension-badge';
+            widthDiv.textContent = `${wid} м`;
+            const widthLabel = new THREE.CSS2DObject(widthDiv);
+            widthLabel.position.set(0, -2.5, len / 2 + 0.1);
+            scene.add(widthLabel);
+            labelMeshes.push(widthLabel);
 
-                dRoof.rotation.y = Math.PI / 2;
-                const posZ = dormer.position;
-                const shiftOut = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+            const canHaveDormers = (shapeType === 'gable' || shapeType === 'hip');
+            if (canHaveDormers) {
+                dormerConfig.forEach((dormer) => {
+                    const dHeight = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
+                    const dShape = createGableShape(dormer.width, dHeight);
+                    const dExtrusion = dormer.projection + (wid / 2);
 
-                dRoof.position.set(shiftOut, 0, posZ);
-                scene.add(dRoof);
-                roofMeshes.push(dRoof);
+                    const dRoof = createRoofMesh(dShape, dExtrusion, roofColor);
 
-                const dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
-                const dBaseMesh = new THREE.Mesh(dBaseGeo, baseMat);
-                dBaseMesh.position.set(shiftOut - 0.1, -2.5, posZ);
-                dBaseMesh.receiveShadow = true;
-                dBaseMesh.castShadow = true;
-                scene.add(dBaseMesh);
-                roofMeshes.push(dBaseMesh);
-            });
+                    dRoof.rotation.y = Math.PI / 2;
+                    const posZ = dormer.position;
+                    const shiftOut = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+
+                    dRoof.position.set(shiftOut, 0, posZ);
+                    scene.add(dRoof);
+                    roofMeshes.push(dRoof);
+
+                    const dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+                    const dBaseMesh = new THREE.Mesh(dBaseGeo, baseMat);
+                    dBaseMesh.position.set(shiftOut - 0.1, -2.5, posZ);
+                    dBaseMesh.receiveShadow = true;
+                    dBaseMesh.castShadow = true;
+                    scene.add(dBaseMesh);
+                    roofMeshes.push(dBaseMesh);
+                });
+            }
 
             const maxDim = Math.max(len, wid);
             controls.target.set(0, height / 2, 0);
@@ -307,6 +461,7 @@
             if (needsCalcUpdate) recalculateNumbers();
 
             renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
         }
         animate();
 
@@ -315,6 +470,7 @@
                 camera.aspect = container.clientWidth / container.clientHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(container.clientWidth, container.clientHeight);
+                labelRenderer.setSize(container.clientWidth, container.clientHeight);
             }
         });
 
@@ -392,6 +548,7 @@
                 length: parseFloat(lengthInput.value) || 0,
                 width: parseFloat(widthInput.value) || 0,
                 angle: parseFloat(angleInput.value) || 0,
+                roofShape: roofShapeInput.value,
                 materialPrice: parseFloat(materialSel.value) || 0,
                 wastePct: parseFloat(wasteInput.value) || 0,
                 laborRate: parseFloat(laborInput.value) || 0,
@@ -439,8 +596,33 @@
             renderDormerUI();
         }));
 
-        [materialSel, wasteInput, laborInput].forEach(el => el.addEventListener('input', () => {
+        const angleGroup = document.getElementById('angleGroup');
+        const angleLabelText = document.getElementById('angleLabelText');
+        const dormerSection = document.getElementById('dormerSection');
+
+        [roofShapeInput, materialSel, wasteInput, laborInput].forEach(el => el.addEventListener('input', () => {
             needsCalcUpdate = true;
+            if (el === materialSel || el === roofShapeInput) {
+                needs3DUpdate = true;
+            }
+            if (el === roofShapeInput) {
+                if (roofShapeInput.value === 'flat') {
+                    angleGroup.style.display = 'none';
+                } else {
+                    angleGroup.style.display = 'block';
+                    if (roofShapeInput.value === 'mansard') {
+                        angleLabelText.textContent = 'Крутизна нижнего ската:';
+                    } else {
+                        angleLabelText.textContent = 'Угол наклона скатов:';
+                    }
+                }
+
+                if (roofShapeInput.value === 'gable' || roofShapeInput.value === 'hip') {
+                    dormerSection.style.display = 'block';
+                } else {
+                    dormerSection.style.display = 'none';
+                }
+            }
         }));
 
         resetBtn.addEventListener('click', () => {
@@ -449,7 +631,7 @@
             angleInput.value = 30;
             materialSel.selectedIndex = 1;
             wasteInput.value = 15;
-            laborInput.value = 2500;
+            laborInput.value = 3500;
             dormerConfig = [];
             angleVal.textContent = "30";
 
