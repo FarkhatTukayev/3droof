@@ -385,43 +385,48 @@
             needsCalcUpdate = true;
         });
 
-        function recalculateNumbers() {
+        async function recalculateNumbers() {
             needsCalcUpdate = false;
-            const len = parseFloat(lengthInput.value) || 0;
-            const wid = parseFloat(widthInput.value) || 0;
-            const angle = parseFloat(angleInput.value) || 0;
 
-            const rad = angle * Math.PI / 180;
-            const slopeLen = (wid / 2) / Math.cos(rad);
-            let netArea = (len * slopeLen) * 2;
-
-            dormerConfig.forEach(d => {
-                const dSlopeLen = (d.width / 2) / Math.cos(rad);
-                const dormerArea = dSlopeLen * d.projection * 2;
-                netArea += dormerArea;
-            });
+            const payload = {
+                length: parseFloat(lengthInput.value) || 0,
+                width: parseFloat(widthInput.value) || 0,
+                angle: parseFloat(angleInput.value) || 0,
+                materialPrice: parseFloat(materialSel.value) || 0,
+                wastePct: parseFloat(wasteInput.value) || 0,
+                laborRate: parseFloat(laborInput.value) || 0,
+                dormers: dormerConfig
+            };
 
             const wastePct = parseFloat(wasteInput.value) || 0;
             wastePctDisplay.textContent = wastePct;
 
-            const totalArea = netArea * (1 + wastePct / 100);
+            try {
+                const response = await fetch('http://localhost:3000/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            netAreaValEl.textContent = toFixedNum(netArea, 2) + ' м²';
-            totalAreaEl.textContent = toFixedNum(totalArea, 2) + ' м²';
+                if (!response.ok) throw new Error("API Network Error");
 
-            const materialPrice = parseFloat(materialSel.value) || 0;
-            const materialCost = totalArea * materialPrice;
-            materialCostEl.textContent = formatDigit(toFixedNum(materialCost, 0));
+                const data = await response.json();
 
-            const laborRate = parseFloat(laborInput.value) || 0;
-            const laborCost = totalArea * laborRate;
-            laborCostEl.textContent = formatDigit(toFixedNum(laborCost, 0));
+                netAreaValEl.textContent = data.netArea + ' м²';
+                totalAreaEl.textContent = data.totalArea + ' м²';
+                materialCostEl.textContent = formatDigit(data.materialCost);
+                laborCostEl.textContent = formatDigit(data.laborCost);
+                grandTotalEl.textContent = formatDigit(data.grandTotal);
 
-            const grandTotal = materialCost + laborCost;
-            grandTotalEl.textContent = formatDigit(toFixedNum(grandTotal, 0));
+            } catch (err) {
+                console.error("Calculation fetch failed:", err);
+                netAreaValEl.textContent = 'Ошибка';
+                totalAreaEl.textContent = 'Ошибка';
+                materialCostEl.textContent = 'Ошибка';
+                laborCostEl.textContent = 'Ошибка';
+                grandTotalEl.textContent = 'Ошибка';
+            }
         }
-
-        // Event Listeners
         angleInput.addEventListener('input', () => {
             angleVal.textContent = angleInput.value;
             needs3DUpdate = true;
