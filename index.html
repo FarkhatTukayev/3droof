@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>3D Калькулятор кровли PRO | Тенге</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="logo-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 20L12 4l10 16"></path>
+                    <path d="M12 4v16"></path>
+                </svg>
+            </div>
+            <div>
+                <h1>RoofCalc Pro</h1>
+                <p>Архитектурный 3D-расчет сметы</p>
+            </div>
+        </div>
+        <button id="resetBtn" class="btn btn-outline btn-small">Сбросить настройки</button>
+    </header>
+
+    <div class="container">
+        <aside class="controls-sidebar">
+
+            <div>
+                <div class="section-title">
+                    <span>Габариты крыши</span>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Длина (м)</label>
+                        <input id="length" type="number" min="2" max="50" step="0.5" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Ширина (м)</label>
+                        <input id="width" type="number" min="2" max="50" step="0.5" value="8">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Угол наклона скатов: <span id="angleVal" style="color:var(--text-main)">30</span>°</label>
+                    <input id="angle" type="range" min="10" max="60" step="1" value="30">
+                    <div class="range-labels">
+                        <span>Пологая</span>
+                        <span>Крутая</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">
+                    <span>Сложные конструкции</span>
+                    <button id="addDormerBtn" class="btn btn-outline btn-small">+ Добавить врезку</button>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                    Опционально: Добавьте слуховые окна (кукушки) или дополнительные скаты для сложной формы крыши.
+                </div>
+                <div id="dormersContainer">
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">
+                    <span>Материалы и смета</span>
+                </div>
+                <div class="form-group">
+                    <label>Тип покрытия</label>
+                    <select id="material">
+                        <option value="4500">Металлочерепица (Эконом) — 4 500 ₸/м²</option>
+                        <option value="6000" selected>Металлочерепица (Премиум) — 6 000 ₸/м²</option>
+                        <option value="3500">Профнастил — 3 500 ₸/м²</option>
+                        <option value="12000">Мягкая кровля — 12 000 ₸/м²</option>
+                        <option value="15000">Композитная черепица — 15 000 ₸/м²</option>
+                    </select>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Запас (отход), %</label>
+                        <input id="waste" type="number" min="0" max="50" value="15">
+                    </div>
+                    <div class="form-group">
+                        <label>Монтаж, ₸/м²</label>
+                        <input id="labor" type="number" min="0" step="100" value="2500">
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="visual-area">
+            <div id="canvas-container"></div>
+            <div class="canvas-hint">Удержание ЛКМ: вращение • Колесико: зум</div>
+
+            <div class="summary-card">
+                <h2>Результат расчета</h2>
+
+                <div class="stat-row">
+                    <span class="stat-label">Площадь скатов (чистая)</span>
+                    <span class="stat-value" id="netAreaVal">— м²</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Площадь к закупке (запас <span id="wastePctDisplay">15</span>%)</span>
+                    <span class="stat-value" id="totalArea">— м²</span>
+                </div>
+                <div class="stat-row" style="margin-top: 24px;">
+                    <span class="stat-label">Стоимость материалов</span>
+                    <span class="stat-value" id="materialCost">— ₸</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Стоимость монтажа</span>
+                    <span class="stat-value" id="laborCost">— ₸</span>
+                </div>
+
+                <div class="total-divider"></div>
+
+                <div class="total-label">Итоговая смета</div>
+                <div class="total-sum">
+                    <span id="grandTotal">—</span> <span class="currency">₸</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const lengthInput = document.getElementById('length');
+        const widthInput = document.getElementById('width');
+        const angleInput = document.getElementById('angle');
+        const angleVal = document.getElementById('angleVal');
+
+        const dormersContainer = document.getElementById('dormersContainer');
+        const addDormerBtn = document.getElementById('addDormerBtn');
+
+        const materialSel = document.getElementById('material');
+        const wasteInput = document.getElementById('waste');
+        const laborInput = document.getElementById('labor');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const netAreaValEl = document.getElementById('netAreaVal');
+        const wastePctDisplay = document.getElementById('wastePctDisplay');
+        const totalAreaEl = document.getElementById('totalArea');
+        const materialCostEl = document.getElementById('materialCost');
+        const laborCostEl = document.getElementById('laborCost');
+        const grandTotalEl = document.getElementById('grandTotal');
+
+        let dormerConfig = [];
+
+        let needs3DUpdate = true;
+        let needsCalcUpdate = true;
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.VSMShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 150;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(20, 40, 30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.0001;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xe2e8f0, 0.5);
+        fillLight.position.set(-20, 20, -20);
+        scene.add(fillLight);
+
+        const gridHelper = new THREE.GridHelper(80, 80, 0x94a3b8, 0xe2e8f0);
+        gridHelper.material.opacity = 0.5;
+        gridHelper.material.transparent = true;
+        gridHelper.position.y = -2.51;
+        scene.add(gridHelper);
+
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.ShadowMaterial({ opacity: 0.05 });
+        const groundObj = new THREE.Mesh(groundGeo, groundMat);
+        groundObj.rotation.x = -Math.PI / 2;
+        groundObj.position.y = -2.51;
+        groundObj.receiveShadow = true;
+        scene.add(groundObj);
+
+        let roofMeshes = [];
+
+        function createGableShape(w, h) {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0);
+            shape.lineTo(w / 2, h);
+            shape.lineTo(w, 0);
+            shape.lineTo(0, 0);
+            return shape;
+        }
+
+        function createRoofMesh(shape, depth, colorHex) {
+            const extrudeSettings = { depth: depth, bevelEnabled: false };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.computeBoundingBox();
+            const bBox = geometry.boundingBox;
+            geometry.translate(
+                -(bBox.max.x - bBox.min.x) / 2,
+                0,
+                -(bBox.max.z - bBox.min.z) / 2
+            );
+
+            const material = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                roughness: 0.7,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true }));
+            mesh.add(line);
+
+            return mesh;
+        }
+
+        function build3DModel() {
+            if (!needs3DUpdate) return;
+            needs3DUpdate = false;
+
+            const len = parseFloat(lengthInput.value) || 10;
+            const wid = parseFloat(widthInput.value) || 8;
+            const angleDeg = parseFloat(angleInput.value) || 30;
+
+            roofMeshes.forEach(m => scene.remove(m));
+            roofMeshes = [];
+
+            const height = Math.tan(angleDeg * Math.PI / 180) * (wid / 2);
+
+            const mainShape = createGableShape(wid, height);
+            const mainRoof = createRoofMesh(mainShape, len, 0x1e293b);
+            scene.add(mainRoof);
+            roofMeshes.push(mainRoof);
+
+            const baseGeo = new THREE.BoxGeometry(wid - 0.4, 5, len - 0.4);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 1.0 });
+            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            baseMesh.position.y = -2.5;
+            baseMesh.receiveShadow = true;
+            baseMesh.castShadow = true;
+            scene.add(baseMesh);
+            roofMeshes.push(baseMesh);
+
+            dormerConfig.forEach((dormer) => {
+                const dHeight = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
+                const dShape = createGableShape(dormer.width, dHeight);
+                const dExtrusion = dormer.projection + (wid / 2);
+
+                const dRoof = createRoofMesh(dShape, dExtrusion, 0x334155);
+
+                dRoof.rotation.y = Math.PI / 2;
+                const posZ = dormer.position;
+                const shiftOut = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+
+                dRoof.position.set(shiftOut, 0, posZ);
+                scene.add(dRoof);
+                roofMeshes.push(dRoof);
+
+                const dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+                const dBaseMesh = new THREE.Mesh(dBaseGeo, baseMat);
+                dBaseMesh.position.set(shiftOut - 0.1, -2.5, posZ);
+                dBaseMesh.receiveShadow = true;
+                dBaseMesh.castShadow = true;
+                scene.add(dBaseMesh);
+                roofMeshes.push(dBaseMesh);
+            });
+
+            const maxDim = Math.max(len, wid);
+            controls.target.set(0, height / 2, 0);
+
+            if (!window.cameraInitialized) {
+                camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
+                window.cameraInitialized = true;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            if (needs3DUpdate) build3DModel();
+            if (needsCalcUpdate) recalculateNumbers();
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            if (container.clientWidth && container.clientHeight) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+
+        function toFixedNum(n, d = 2) { return Math.round(n * Math.pow(10, d)) / Math.pow(10, d); }
+        function formatDigit(n) { return n.toLocaleString('ru-RU'); }
+
+        function renderDormerUI() {
+            dormersContainer.innerHTML = '';
+            dormerConfig.forEach((dormer, index) => {
+                const el = document.createElement('div');
+                el.className = 'dormer-item';
+
+                const len = parseFloat(lengthInput.value) || 10;
+                const maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+
+                el.innerHTML = `
+                    <button class="btn-remove" onclick="removeDormer(${index})" title="Удалить">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-main);">Врезка #${index + 1}</div>
+                    <div class="grid-2">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Ширина (м)</label>
+                            <input type="number" step="0.5" min="1" max="10" value="${dormer.width}" 
+                                oninput="updateDormer(${index}, 'width', this.value)">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Вынос (м)</label>
+                            <input type="number" step="0.5" min="0.5" max="10" value="${dormer.projection}"
+                                oninput="updateDormer(${index}, 'projection', this.value)">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Сдвиг вдоль крыши: <span style="color:var(--text-main); font-weight:500;">${dormer.position} м</span></label>
+                        <input type="range" min="-${maxPos}" max="${maxPos}" step="0.1" value="${dormer.position}"
+                            oninput="updateDormer(${index}, 'position', this.value)">
+                    </div>
+                `;
+                dormersContainer.appendChild(el);
+            });
+        }
+
+        window.updateDormer = (index, key, val) => {
+            dormerConfig[index][key] = parseFloat(val);
+            if (key !== 'position') renderDormerUI();
+            else {
+                const item = dormersContainer.children[index];
+                if (item) {
+                    const labelSpan = item.querySelector('label span');
+                    if (labelSpan) labelSpan.textContent = val + ' м';
+                }
+            }
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+        };
+
+        window.removeDormer = (index) => {
+            dormerConfig.splice(index, 1);
+            renderDormerUI();
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+        };
+
+        addDormerBtn.addEventListener('click', () => {
+            dormerConfig.push({ width: 3, projection: 1.5, position: 0 });
+            renderDormerUI();
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+        });
+
+        function recalculateNumbers() {
+            needsCalcUpdate = false;
+            const len = parseFloat(lengthInput.value) || 0;
+            const wid = parseFloat(widthInput.value) || 0;
+            const angle = parseFloat(angleInput.value) || 0;
+
+            const rad = angle * Math.PI / 180;
+            const slopeLen = (wid / 2) / Math.cos(rad);
+            let netArea = (len * slopeLen) * 2;
+
+            dormerConfig.forEach(d => {
+                const dSlopeLen = (d.width / 2) / Math.cos(rad);
+                const dormerArea = dSlopeLen * d.projection * 2;
+                netArea += dormerArea;
+            });
+
+            const wastePct = parseFloat(wasteInput.value) || 0;
+            wastePctDisplay.textContent = wastePct;
+
+            const totalArea = netArea * (1 + wastePct / 100);
+
+            netAreaValEl.textContent = toFixedNum(netArea, 2) + ' м²';
+            totalAreaEl.textContent = toFixedNum(totalArea, 2) + ' м²';
+
+            const materialPrice = parseFloat(materialSel.value) || 0;
+            const materialCost = totalArea * materialPrice;
+            materialCostEl.textContent = formatDigit(toFixedNum(materialCost, 0));
+
+            const laborRate = parseFloat(laborInput.value) || 0;
+            const laborCost = totalArea * laborRate;
+            laborCostEl.textContent = formatDigit(toFixedNum(laborCost, 0));
+
+            const grandTotal = materialCost + laborCost;
+            grandTotalEl.textContent = formatDigit(toFixedNum(grandTotal, 0));
+        }
+
+        // Event Listeners
+        angleInput.addEventListener('input', () => {
+            angleVal.textContent = angleInput.value;
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+        });
+
+        [lengthInput, widthInput].forEach(el => el.addEventListener('input', () => {
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+            renderDormerUI();
+        }));
+
+        [materialSel, wasteInput, laborInput].forEach(el => el.addEventListener('input', () => {
+            needsCalcUpdate = true;
+        }));
+
+        resetBtn.addEventListener('click', () => {
+            lengthInput.value = 10;
+            widthInput.value = 8;
+            angleInput.value = 30;
+            materialSel.selectedIndex = 1;
+            wasteInput.value = 15;
+            laborInput.value = 2500;
+            dormerConfig = [];
+            angleVal.textContent = "30";
+
+            renderDormerUI();
+
+            const maxDim = Math.max(10, 8);
+            controls.target.set(0, (Math.tan(30 * Math.PI / 180) * 4), 0);
+            camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
+            controls.update();
+
+            needs3DUpdate = true;
+            needsCalcUpdate = true;
+        });
+
+        renderDormerUI();
+        needs3DUpdate = true;
+        needsCalcUpdate = true;
+
+    </script>
+</body>
+
+</html>
