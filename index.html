@@ -1,200 +1,1 @@
-<!doctype html>
-<html lang="ru">
-
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>3D Калькулятор кровли PRO | Тенге</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
-</head>
-
-<body>
-    <header class="topbar">
-        <div class="brand">
-            <div class="logo-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 20L12 4l10 16"></path>
-                    <path d="M12 4v16"></path>
-                </svg>
-            </div>
-            <div>
-                <h1>RoofCalc Pro</h1>
-                <p>Архитектурный 3D-расчет сметы</p>
-            </div>
-        </div>
-        <div style="display:flex; gap:12px; margin-left:auto;">
-            <button id="themeToggle" class="btn btn-outline btn-small">🌙 Тёмная</button>
-            <button id="resetBtn" class="btn btn-outline btn-small">Сброс</button>
-        </div>
-    </header>
-
-    <div class="container">
-        <aside class="controls-sidebar">
-
-            <div>
-                <div class="section-title">
-                    <span>Габариты крыши</span>
-                </div>
-                <div class="form-group">
-                    <label>Тип крыши</label>
-                    <select id="roofShape" class="select-input">
-                        <option value="gable" selected>Двускатная (Gable)</option>
-                        <option value="hip">Вальмовая (Hip)</option>
-                        <option value="shed">Односкатная (Shed)</option>
-                        <option value="flat">Плоская (Flat)</option>
-                        <option value="mansard">Мансардная (Mansard)</option>
-                    </select>
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>Длина (м)</label>
-                        <input id="length" type="number" min="2" max="50" step="0.5" value="10">
-                    </div>
-                    <div class="form-group">
-                        <label>Ширина (м)</label>
-                        <input id="width" type="number" min="2" max="50" step="0.5" value="8">
-                    </div>
-                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
-                        <label>Свесы кровли (м)</label>
-                        <input id="overhang" type="number" min="0" max="1.5" step="0.1" value="0.5">
-                    </div>
-                </div>
-                <div class="form-group" id="angleGroup">
-                    <label><span id="angleLabelText">Угол наклона скатов:</span> <span id="angleVal"
-                            style="color:var(--text-main)">30</span>°</label>
-                    <input id="angle" type="range" min="10" max="60" step="1" value="30">
-                    <div class="range-labels">
-                        <span>Пологая</span>
-                        <span>Крутая</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="dormerSection">
-                <div class="section-title">
-                    <span>Сложные конструкции</span>
-                    <button id="addDormerBtn" class="btn btn-outline btn-small">+ Добавить врезку</button>
-                </div>
-                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-                    Опционально: Добавьте слуховые окна или дополнительные скаты для сложной формы крыши.
-                </div>
-                <div id="dormersContainer">
-                </div>
-            </div>
-
-            <div>
-                <div class="section-title">
-                    <span>Материалы и смета</span>
-                </div>
-                <div class="form-group">
-                    <label>Тип покрытия</label>
-                    <select id="material" class="select-input">
-                        <option value="2800">Металлочерепица (Эконом) - 2 800 ₸/м²</option>
-                        <option value="4800" selected>Металлочерепица (Премиум) - 4 800 ₸/м²</option>
-                        <option value="2500">Профнастил - 2 500 ₸/м²</option>
-                        <option value="4500">Мягкая кровля (Битумная) - 4 500 ₸/м²</option>
-                        <option value="9500">Композитная черепица - 9 500 ₸/м²</option>
-                    </select>
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>Запас (отход), %</label>
-                        <input id="waste" type="number" min="0" max="50" value="15">
-                    </div>
-                    <div class="form-group">
-                        <label>Рабочая ширина листа (м)</label>
-                        <input id="sheetWidth" type="number" min="0.5" max="2" step="0.01" value="1.15">
-                    </div>
-                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
-                        <label>Стоимость монтажа (₸/м²)</label>
-                        <input type="number" id="labor" value="4500" class="number-input" min="0" step="100">
-                    </div>
-                </div>
-                <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="includeInsulation" class="checkbox-input">
-                        <span style="font-size: 13px;">Утепление 200мм (Минвата)</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="includeWood" class="checkbox-input">
-                        <span style="font-size: 13px;">Пиломатериалы (Обрешетка, Стропила)</span>
-                    </label>
-                </div>
-            </div>
-
-        </aside>
-
-        <main class="visual-area">
-            <div id="canvas-container"></div>
-            <div class="canvas-hint">Удержание ЛКМ: вращение • Колесико: зум</div>
-
-            <div class="summary-card">
-                <h2>Результат расчета</h2>
-
-                <div class="stat-row">
-                    <span class="stat-label">Площадь скатов (чистая)</span>
-                    <span class="stat-value" id="netAreaVal">— м²</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Длина конька</span>
-                    <span class="stat-value" id="ridgeLengthDisplay">— м</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Площадь к закупке (запас <span id="wastePctDisplay">15</span>%)</span>
-                    <span class="stat-value" id="totalArea">— м²</span>
-                </div>
-                <div class="stat-row" style="margin-top: 24px;">
-                    <span class="stat-label">Стоимость материалов</span>
-                    <span class="stat-value" id="materialCost">— ₸</span>
-                </div>
-                <div id="detailedMaterialsBlock"
-                    style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px; font-size: 13px; border: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: var(--text-muted)">Кровельное покрытие</span>
-                        <span id="detCoverCost" style="font-weight: 500; color: var(--text-main);">—</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: var(--text-muted)">Крепеж (<span id="detScrewsCount">—</span> шт)</span>
-                        <span id="detScrewsCost" style="font-weight: 500; color: var(--text-main);">—</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: var(--text-muted)">Изоляционные пленки (<span id="detMemArea">—</span>
-                            м²)</span>
-                        <span id="detMemCost" style="font-weight: 500; color: var(--text-main);">—</span>
-                    </div>
-                    <div id="detInsulationRow"
-                        style="display: none; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: var(--text-muted)">Утеплитель (<span id="detInsVolume">—</span> м³)</span>
-                        <span id="detInsCost" style="font-weight: 500; color: var(--text-main);">—</span>
-                    </div>
-                    <div id="detWoodRow" style="display: none; justify-content: space-between;">
-                        <span style="color: var(--text-muted)">Пиломатериалы (<span id="detWoodVolume">—</span>
-                            м³)</span>
-                        <span id="detWoodCost" style="font-weight: 500; color: var(--text-main);">—</span>
-                    </div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Стоимость монтажа</span>
-                    <span class="stat-value" id="laborCost">— ₸</span>
-                </div>
-
-                <div class="total-divider"></div>
-
-                <div class="total-label">Итоговая смета</div>
-                <div class="total-sum">
-                    <span id="grandTotal">—</span> <span class="currency">₸</span>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="js/app3d.js"></script>
-    <script src="js/ui.js"></script>
-</body>
-
-</html>
+<!doctype html><html lang="ru"><head>    <meta charset="utf-8" />    <meta name="viewport" content="width=device-width,initial-scale=1" />    <title>3D Калькулятор кровли PRO | Тенге</title>    <link rel="stylesheet" href="style.css">    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script></head><body>    <header class="topbar">        <div class="brand">            <div class="logo-icon">                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"                    stroke-linecap="round" stroke-linejoin="round">                    <path d="M2 20L12 4l10 16"></path>                    <path d="M12 4v16"></path>                </svg>            </div>            <div>                <h1>RoofCalc Pro</h1>                <p>Архитектурный 3D-расчет сметы</p>            </div>        </div>        <div style="display:flex; gap:12px; margin-left:auto;">            <button id="themeToggle" class="btn btn-outline btn-small">🌙 Тёмная</button>            <button id="resetBtn" class="btn btn-outline btn-small">Сброс</button>        </div>    </header>    <div class="container">        <aside class="controls-sidebar">            <div>                <div class="section-title">                    <span>Габариты крыши</span>                </div>                <div class="form-group">                    <label>Тип крыши</label>                    <select id="roofShape" class="select-input">                        <option value="gable" selected>Двускатная (Gable)</option>                        <option value="hip">Вальмовая (Hip)</option>                        <option value="shed">Односкатная (Shed)</option>                        <option value="flat">Плоская (Flat)</option>                        <option value="mansard">Мансардная (Mansard)</option>                    </select>                </div>                <div class="grid-2">                    <div class="form-group">                        <label>Длина (м)</label>                        <input id="length" type="number" min="2" max="50" step="0.5" value="10">                    </div>                    <div class="form-group">                        <label>Ширина (м)</label>                        <input id="width" type="number" min="2" max="50" step="0.5" value="8">                    </div>                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">                        <label>Свесы кровли (м)</label>                        <input id="overhang" type="number" min="0" max="1.5" step="0.1" value="0.5">                    </div>                </div>                <div class="form-group" id="angleGroup">                    <label><span id="angleLabelText">Угол наклона скатов:</span> <span id="angleVal"                            style="color:var(--text-main)">30</span>°</label>                    <input id="angle" type="range" min="10" max="60" step="1" value="30">                    <div class="range-labels">                        <span>Пологая</span>                        <span>Крутая</span>                    </div>                </div>            </div>            <div id="dormerSection">                <div class="section-title">                    <span>Сложные конструкции</span>                    <button id="addDormerBtn" class="btn btn-outline btn-small">+ Добавить врезку</button>                </div>                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">                    Опционально: Добавьте слуховые окна или дополнительные скаты для сложной формы крыши.                </div>                <div id="dormersContainer">                </div>            </div>            <div>                <div class="section-title">                    <span>Материалы и смета</span>                </div>                <div class="form-group">                    <label>Тип покрытия</label>                    <select id="material" class="select-input">                        <option value="2800">Металлочерепица (Эконом) - 2 800 ₸/м²</option>                        <option value="4800" selected>Металлочерепица (Премиум) - 4 800 ₸/м²</option>                        <option value="2500">Профнастил - 2 500 ₸/м²</option>                        <option value="4500">Мягкая кровля (Битумная) - 4 500 ₸/м²</option>                        <option value="9500">Композитная черепица - 9 500 ₸/м²</option>                    </select>                </div>                <div class="grid-2">                    <div class="form-group">                        <label>Запас (отход), %</label>                        <input id="waste" type="number" min="0" max="50" value="15">                    </div>                    <div class="form-group">                        <label>Рабочая ширина листа (м)</label>                        <input id="sheetWidth" type="number" min="0.5" max="2" step="0.01" value="1.15">                    </div>                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">                        <label>Стоимость монтажа (₸/м²)</label>                        <input type="number" id="labor" value="4500" class="number-input" min="0" step="100">                    </div>                </div>                <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">                        <input type="checkbox" id="includeInsulation" class="checkbox-input">                        <span style="font-size: 13px;">Утепление 200мм (Минвата)</span>                    </label>                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">                        <input type="checkbox" id="includeWood" class="checkbox-input">                        <span style="font-size: 13px;">Пиломатериалы (Обрешетка, Стропила)</span>                    </label>                </div>            </div>        </aside>        <main class="visual-area">            <div id="canvas-container"></div>            <div class="canvas-hint">Удержание ЛКМ: вращение • Колесико: зум</div>            <div class="summary-card">                <h2>Результат расчета</h2>                <div class="stat-row">                    <span class="stat-label">Площадь скатов (чистая)</span>                    <span class="stat-value" id="netAreaVal">— м²</span>                </div>                <div class="stat-row">                    <span class="stat-label">Длина конька</span>                    <span class="stat-value" id="ridgeLengthDisplay">— м</span>                </div>                <div class="stat-row">                    <span class="stat-label">Площадь к закупке (запас <span id="wastePctDisplay">15</span>%)</span>                    <span class="stat-value" id="totalArea">— м²</span>                </div>                <div class="stat-row" style="margin-top: 24px;">                    <span class="stat-label">Стоимость материалов</span>                    <span class="stat-value" id="materialCost">— ₸</span>                </div>                <div id="detailedMaterialsBlock"                    style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px; font-size: 13px; border: 1px solid var(--border);">                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">                        <span style="color: var(--text-muted)">Кровельное покрытие</span>                        <span id="detCoverCost" style="font-weight: 500; color: var(--text-main);">—</span>                    </div>                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">                        <span style="color: var(--text-muted)">Крепеж (<span id="detScrewsCount">—</span> шт)</span>                        <span id="detScrewsCost" style="font-weight: 500; color: var(--text-main);">—</span>                    </div>                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">                        <span style="color: var(--text-muted)">Изоляционные пленки (<span id="detMemArea">—</span>                            м²)</span>                        <span id="detMemCost" style="font-weight: 500; color: var(--text-main);">—</span>                    </div>                    <div id="detInsulationRow"                        style="display: none; justify-content: space-between; margin-bottom: 6px;">                        <span style="color: var(--text-muted)">Утеплитель (<span id="detInsVolume">—</span> м³)</span>                        <span id="detInsCost" style="font-weight: 500; color: var(--text-main);">—</span>                    </div>                    <div id="detWoodRow" style="display: none; justify-content: space-between;">                        <span style="color: var(--text-muted)">Пиломатериалы (<span id="detWoodVolume">—</span>                            м³)</span>                        <span id="detWoodCost" style="font-weight: 500; color: var(--text-main);">—</span>                    </div>                </div>                <div class="stat-row">                    <span class="stat-label">Стоимость монтажа</span>                    <span class="stat-value" id="laborCost">— ₸</span>                </div>                <div class="total-divider"></div>                <div class="total-label">Итоговая смета</div>                <div class="total-sum">                    <span id="grandTotal">—</span> <span class="currency">₸</span>                </div>            </div>        </main>    </div>    <script src="js/app3d.js"></script>    <script src="js/ui.js"></script></body></html>
