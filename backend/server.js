@@ -4,65 +4,101 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
+const fs = require('fs');
+const path = require('path');
+
 app.use(cors());
 app.use(express.json());
 
+// Загрузка цен из JSON
+function getPrices() {
+    const data = fs.readFileSync(path.join(__dirname, 'prices.json'), 'utf8');
+    return JSON.parse(data);
+}
+
+app.get('/api/prices', (req, res) => {
+    try {
+        const prices = getPrices();
+        res.json(prices);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load prices" });
+    }
+});
+
 app.post('/api/calculate', (req, res) => {
+    const prices = getPrices();
     const {
         length = 0,
         width = 0,
         angle = 0,
-        materialPrice = 0,
+        materialPrice = 0, // Приходит от клиента
         wastePct = 0,
+        sheetWidth = 1.15,
         laborRate = 0,
         dormers = [],
-        roofShape = 'gable'
+        roofShape = 'gable',
+        overhang = 0.5,
+        includeInsulation = false,
+        includeWood = false
     } = req.body;
 
     const rad = angle * Math.PI / 180;
 
+    // 1. Учитываем свесы кровли (крыша больше фундамента)
+    const realLength = length + (2 * overhang);
+    const realWidth = width + (2 * overhang);
+    const baseArea = realLength * realWidth;
+
     let netArea = 0;
+    let grossArea = 0;
+    let ridgeLength = 0;
+
+    // Учет целых листов по ширине ската
+    const effLength = Math.ceil(realLength / sheetWidth) * sheetWidth;
+    const effWidth = Math.ceil(realWidth / sheetWidth) * sheetWidth;
 
     // Точные математические формулы для каждого типа крыши
     if (roofShape === 'flat') {
-        // Плоская крыша с минимальным уклоном
-        netArea = (length * width) * 1.02;
+        netArea = baseArea * 1.05; 
+        grossArea = (effLength * effWidth) * 1.05;
+        ridgeLength = 0;
 
     } else if (roofShape === 'mansard') {
-        // Мансардная крыша: крутой нижний скат и пологий верхний
         const lowerPitch = Math.max(45, angle) * Math.PI / 180;
         const upperPitch = 15 * Math.PI / 180;
 
-        let h1 = 2.5; // Примерная высота мансардного этажа
+        let h1 = 2.5;
         let inset1 = h1 / Math.tan(lowerPitch);
-        if (inset1 > Math.min(width, length) / 2.5) {
-            inset1 = Math.min(width, length) / 2.5;
+        if (inset1 > Math.min(realWidth, realLength) / 2.5) {
+            inset1 = Math.min(realWidth, realLength) / 2.5;
         }
 
-        const outerArea = width * length;
-        const innerWidth = Math.max(0, width - 2 * inset1);
-        const innerLength = Math.max(0, length - 2 * inset1);
+        const outerArea = baseArea;
+        const innerWidth = Math.max(0, realWidth - 2 * inset1);
+        const innerLength = Math.max(0, realLength - 2 * inset1);
         const innerArea = innerWidth * innerLength;
         const lowerRingArea = outerArea - innerArea;
 
         const areaLower = lowerRingArea / Math.cos(lowerPitch);
         const areaUpper = innerArea / Math.cos(upperPitch);
         netArea = areaLower + areaUpper;
+        grossArea = netArea * (effLength / realLength); 
+        ridgeLength = Math.max(0, realLength - realWidth);
 
     } else if (roofShape === 'hip') {
-        // Вальмовая крыша: 4 ската под одним углом
-        // Геометрически площадь поверхности = Площадь основания / cos(угла)
-        netArea = (length * width) / Math.cos(rad);
+        netArea = baseArea / Math.cos(rad);
+        grossArea = (effLength * effWidth) / Math.cos(rad); 
+        ridgeLength = Math.max(0, realLength - realWidth);
 
     } else if (roofShape === 'shed') {
-        // Односкатная крыша
-        // Площадь поверхности = Площадь основания / cos(угла)
-        netArea = (length * width) / Math.cos(rad);
+        netArea = baseArea / Math.cos(rad);
+        grossArea = (effLength * realWidth) / Math.cos(rad); 
+        ridgeLength = 0;
 
     } else {
-        // Двускатная крыша (Gable)
-        // Площадь поверхности = Площадь основания / cos(угла)
-        netArea = (length * width) / Math.cos(rad);
+        netArea = baseArea / Math.cos(rad);
+        grossArea = (effLength * realWidth) / Math.cos(rad); 
+        ridgeLength = realLength;
     }
 
     if ((roofShape === 'gable' || roofShape === 'hip') && Array.isArray(dormers)) {
@@ -72,23 +108,64 @@ app.post('/api/calculate', (req, res) => {
             const dSlopeLen = (dWidth / 2) / Math.cos(rad);
             const dormerArea = dSlopeLen * dProj * 2;
             netArea += dormerArea;
+
+            const dEffWidth = Math.ceil(dProj * 2 / sheetWidth) * sheetWidth;
+            grossArea += (dSlopeLen * dEffWidth);
         });
     }
 
-    const totalArea = netArea * (1 + wastePct / 100);
-    const materialCost = totalArea * materialPrice;
+    const totalArea = grossArea * (1 + wastePct / 100);
+
+    const ridgePrice = prices.accessories.ridgePrice;
+    const additionalCosts = ridgeLength * ridgePrice;
+
+    // Детализированные материалы
+    const requiredScrews = Math.ceil(totalArea * prices.accessories.screwsPerSqM);
+    const packsCount = Math.ceil(requiredScrews / prices.accessories.screwsPerPack);
+    const screwsCount = packsCount * prices.accessories.screwsPerPack;
+    const screwsCost = screwsCount * prices.accessories.screwPrice;
+
+    const membraneArea = Math.ceil(netArea * 1.15); 
+    const membraneCost = membraneArea * (prices.accessories.membraneHydro + prices.accessories.membraneVapor);
+
+    let insulationVolume = 0;
+    let insulationCost = 0;
+    if (includeInsulation) {
+        insulationVolume = Math.ceil(netArea * 0.2 * 10) / 10; 
+        insulationCost = Math.round(insulationVolume * prices.accessories.insulationPrice);
+    }
+
+    let woodVolume = 0;
+    let woodCost = 0;
+    if (includeWood) {
+        woodVolume = Math.ceil(netArea * 0.03 * 100) / 100;
+        woodCost = Math.round(woodVolume * prices.accessories.woodPrice);
+    }
+
+    const materialCost = (totalArea * materialPrice) + additionalCosts + screwsCost + membraneCost + insulationCost + woodCost;
     const laborCost = totalArea * laborRate;
     const grandTotal = materialCost + laborCost;
+
+    const detailedMaterials = {
+        mainCoverCost: Math.round((totalArea * materialPrice) + additionalCosts),
+        screws: { count: screwsCount, cost: screwsCost },
+        membrane: { area: membraneArea, cost: membraneCost },
+        insulation: { volume: insulationVolume, cost: insulationCost },
+        wood: { volume: woodVolume, cost: woodCost }
+    };
 
     res.json({
         netArea: Math.round(netArea * 100) / 100,
         totalArea: Math.round(totalArea * 100) / 100,
+        ridgeLength: Math.round(ridgeLength * 100) / 100,
         materialCost: Math.round(materialCost),
         laborCost: Math.round(laborCost),
-        grandTotal: Math.round(grandTotal)
+        grandTotal: Math.round(grandTotal),
+        detailedMaterials
     });
 });
 
 app.listen(PORT, () => {
     console.log(`RoofCalc API is running on http://localhost:${PORT}`);
 });
+

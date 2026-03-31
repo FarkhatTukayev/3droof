@@ -58,6 +58,10 @@
                         <label>Ширина (м)</label>
                         <input id="width" type="number" min="2" max="50" step="0.5" value="8">
                     </div>
+                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
+                        <label>Свесы кровли (м)</label>
+                        <input id="overhang" type="number" min="0" max="1.5" step="0.1" value="0.5">
+                    </div>
                 </div>
                 <div class="form-group" id="angleGroup">
                     <label><span id="angleLabelText">Угол наклона скатов:</span> <span id="angleVal"
@@ -89,11 +93,11 @@
                 <div class="form-group">
                     <label>Тип покрытия</label>
                     <select id="material" class="select-input">
-                        <option value="2000">Металлочерепица (Эконом) - 2 000 ₸/м²</option>
-                        <option value="4500" selected>Металлочерепица (Премиум) - 4 500 ₸/м²</option>
-                        <option value="1900">Профнастил - 1 900 ₸/м²</option>
-                        <option value="3500">Мягкая кровля (Битумная) - 3 500 ₸/м²</option>
-                        <option value="8500">Композитная черепица - 8 500 ₸/м²</option>
+                        <option value="2800">Металлочерепица (Эконом) - 2 800 ₸/м²</option>
+                        <option value="4800" selected>Металлочерепица (Премиум) - 4 800 ₸/м²</option>
+                        <option value="2500">Профнастил - 2 500 ₸/м²</option>
+                        <option value="4500">Мягкая кровля (Битумная) - 4 500 ₸/м²</option>
+                        <option value="9500">Композитная черепица - 9 500 ₸/м²</option>
                     </select>
                 </div>
                 <div class="grid-2">
@@ -102,9 +106,23 @@
                         <input id="waste" type="number" min="0" max="50" value="15">
                     </div>
                     <div class="form-group">
-                        <label>Стоимость монтажа (₸/м²)</label>
-                        <input type="number" id="labor" value="3500" class="number-input" min="0" step="100">
+                        <label>Рабочая ширина листа (м)</label>
+                        <input id="sheetWidth" type="number" min="0.5" max="2" step="0.01" value="1.15">
                     </div>
+                    <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
+                        <label>Стоимость монтажа (₸/м²)</label>
+                        <input type="number" id="labor" value="4500" class="number-input" min="0" step="100">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="includeInsulation" class="checkbox-input">
+                        <span style="font-size: 13px;">Утепление 200мм (Минвата)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="includeWood" class="checkbox-input">
+                        <span style="font-size: 13px;">Пиломатериалы (Обрешетка, Стропила)</span>
+                    </label>
                 </div>
             </div>
 
@@ -122,12 +140,42 @@
                     <span class="stat-value" id="netAreaVal">— м²</span>
                 </div>
                 <div class="stat-row">
+                    <span class="stat-label">Длина конька</span>
+                    <span class="stat-value" id="ridgeLengthDisplay">— м</span>
+                </div>
+                <div class="stat-row">
                     <span class="stat-label">Площадь к закупке (запас <span id="wastePctDisplay">15</span>%)</span>
                     <span class="stat-value" id="totalArea">— м²</span>
                 </div>
                 <div class="stat-row" style="margin-top: 24px;">
                     <span class="stat-label">Стоимость материалов</span>
                     <span class="stat-value" id="materialCost">— ₸</span>
+                </div>
+                <div id="detailedMaterialsBlock"
+                    style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px; font-size: 13px; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--text-muted)">Кровельное покрытие</span>
+                        <span id="detCoverCost" style="font-weight: 500; color: var(--text-main);">—</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--text-muted)">Крепеж (<span id="detScrewsCount">—</span> шт)</span>
+                        <span id="detScrewsCost" style="font-weight: 500; color: var(--text-main);">—</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--text-muted)">Изоляционные пленки (<span id="detMemArea">—</span>
+                            м²)</span>
+                        <span id="detMemCost" style="font-weight: 500; color: var(--text-main);">—</span>
+                    </div>
+                    <div id="detInsulationRow"
+                        style="display: none; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--text-muted)">Утеплитель (<span id="detInsVolume">—</span> м³)</span>
+                        <span id="detInsCost" style="font-weight: 500; color: var(--text-main);">—</span>
+                    </div>
+                    <div id="detWoodRow" style="display: none; justify-content: space-between;">
+                        <span style="color: var(--text-muted)">Пиломатериалы (<span id="detWoodVolume">—</span>
+                            м³)</span>
+                        <span id="detWoodCost" style="font-weight: 500; color: var(--text-main);">—</span>
+                    </div>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Стоимость монтажа</span>
@@ -148,6 +196,7 @@
         const roofShapeInput = document.getElementById('roofShape');
         const lengthInput = document.getElementById('length');
         const widthInput = document.getElementById('width');
+        const overhangInput = document.getElementById('overhang');
         const angleInput = document.getElementById('angle');
         const angleVal = document.getElementById('angleVal');
 
@@ -156,7 +205,10 @@
 
         const materialSel = document.getElementById('material');
         const wasteInput = document.getElementById('waste');
+        const sheetWidthInput = document.getElementById('sheetWidth');
         const laborInput = document.getElementById('labor');
+        const includeInsulationCb = document.getElementById('includeInsulation');
+        const includeWoodCb = document.getElementById('includeWood');
         const resetBtn = document.getElementById('resetBtn');
         const themeToggle = document.getElementById('themeToggle');
 
@@ -182,6 +234,7 @@
         const netAreaValEl = document.getElementById('netAreaVal');
         const wastePctDisplay = document.getElementById('wastePctDisplay');
         const totalAreaEl = document.getElementById('totalArea');
+        const ridgeLengthDisplay = document.getElementById('ridgeLengthDisplay');
         const materialCostEl = document.getElementById('materialCost');
         const laborCostEl = document.getElementById('laborCost');
         const grandTotalEl = document.getElementById('grandTotal');
@@ -287,8 +340,11 @@
             if (!needs3DUpdate) return;
             needs3DUpdate = false;
 
-            const len = parseFloat(lengthInput.value) || 10;
-            const wid = parseFloat(widthInput.value) || 8;
+            const baseLen = parseFloat(lengthInput.value) || 10;
+            const baseWid = parseFloat(widthInput.value) || 8;
+            const overhang = parseFloat(overhangInput.value) || 0;
+            const len = baseLen + (2 * overhang);
+            const wid = baseWid + (2 * overhang);
             const angleDeg = parseFloat(angleInput.value) || 30;
 
             roofMeshes.forEach(m => scene.remove(m));
@@ -297,11 +353,11 @@
             labelMeshes = [];
 
             const materialColorMap = {
-                '2000': 0x7f1d1d,
-                '4500': 0x334155,
-                '1900': 0x94a3b8,
-                '3500': 0x78350f,
-                '8500': 0x14532d
+                '2800': 0x7f1d1d,
+                '4800': 0x334155,
+                '2500': 0x94a3b8,
+                '4500': 0x78350f,
+                '9500': 0x14532d
             };
             const roofColor = materialColorMap[materialSel.value] || 0x1e293b;
 
@@ -392,10 +448,10 @@
             scene.add(mainRoof);
             roofMeshes.push(mainRoof);
 
-            const baseGeo = new THREE.BoxGeometry(wid - 0.4, 5, len - 0.4);
+            const baseGeo = new THREE.BoxGeometry(baseWid, 5, baseLen);
             const baseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 1.0 });
             const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-            baseMesh.position.y = -2.5;
+            baseMesh.position.set(0, -2.5, 0);
             baseMesh.receiveShadow = true;
             baseMesh.castShadow = true;
             scene.add(baseMesh);
@@ -403,17 +459,17 @@
 
             const lengthDiv = document.createElement('div');
             lengthDiv.className = 'dimension-badge';
-            lengthDiv.textContent = `${len} м`;
+            lengthDiv.textContent = `${baseLen} м`;
             const lengthLabel = new THREE.CSS2DObject(lengthDiv);
-            lengthLabel.position.set(wid / 2 + 0.1, -2.5, 0);
+            lengthLabel.position.set(baseWid / 2 + 0.1, -2.5, 0);
             scene.add(lengthLabel);
             labelMeshes.push(lengthLabel);
 
             const widthDiv = document.createElement('div');
             widthDiv.className = 'dimension-badge';
-            widthDiv.textContent = `${wid} м`;
+            widthDiv.textContent = `${baseWid} м`;
             const widthLabel = new THREE.CSS2DObject(widthDiv);
-            widthLabel.position.set(0, -2.5, len / 2 + 0.1);
+            widthLabel.position.set(0, -2.5, baseLen / 2 + 0.1);
             scene.add(widthLabel);
             labelMeshes.push(widthLabel);
 
@@ -548,11 +604,15 @@
                 length: parseFloat(lengthInput.value) || 0,
                 width: parseFloat(widthInput.value) || 0,
                 angle: parseFloat(angleInput.value) || 0,
+                overhang: parseFloat(overhangInput.value) || 0,
                 roofShape: roofShapeInput.value,
                 materialPrice: parseFloat(materialSel.value) || 0,
                 wastePct: parseFloat(wasteInput.value) || 0,
+                sheetWidth: parseFloat(sheetWidthInput.value) || 1.15,
                 laborRate: parseFloat(laborInput.value) || 0,
-                dormers: dormerConfig
+                dormers: dormerConfig,
+                includeInsulation: includeInsulationCb.checked,
+                includeWood: includeWoodCb.checked
             };
 
             const wastePct = parseFloat(wasteInput.value) || 0;
@@ -569,11 +629,38 @@
 
                 const data = await response.json();
 
-                netAreaValEl.textContent = data.netArea + ' м²';
-                totalAreaEl.textContent = data.totalArea + ' м²';
-                materialCostEl.textContent = formatDigit(data.materialCost);
-                laborCostEl.textContent = formatDigit(data.laborCost);
+                netAreaValEl.textContent = `${data.netArea} м²`;
+                totalAreaEl.textContent = `${data.totalArea} м²`;
+                ridgeLengthDisplay.textContent = `${data.ridgeLength} м`;
+                materialCostEl.textContent = `${formatDigit(data.materialCost)} ₸`;
+                laborCostEl.textContent = `${formatDigit(data.laborCost)} ₸`;
                 grandTotalEl.textContent = formatDigit(data.grandTotal);
+
+                // Детализация
+                if (data.detailedMaterials) {
+                    document.getElementById('detailedMaterialsBlock').style.display = 'block';
+                    document.getElementById('detCoverCost').textContent = `${formatDigit(data.detailedMaterials.mainCoverCost)} ₸`;
+                    document.getElementById('detScrewsCount').textContent = formatDigit(data.detailedMaterials.screws.count);
+                    document.getElementById('detScrewsCost').textContent = `${formatDigit(data.detailedMaterials.screws.cost)} ₸`;
+                    document.getElementById('detMemArea').textContent = formatDigit(data.detailedMaterials.membrane.area);
+                    document.getElementById('detMemCost').textContent = `${formatDigit(data.detailedMaterials.membrane.cost)} ₸`;
+
+                    if (data.detailedMaterials.insulation.volume > 0) {
+                        document.getElementById('detInsulationRow').style.display = 'flex';
+                        document.getElementById('detInsVolume').textContent = data.detailedMaterials.insulation.volume;
+                        document.getElementById('detInsCost').textContent = `${formatDigit(data.detailedMaterials.insulation.cost)} ₸`;
+                    } else {
+                        document.getElementById('detInsulationRow').style.display = 'none';
+                    }
+
+                    if (data.detailedMaterials.wood.volume > 0) {
+                        document.getElementById('detWoodRow').style.display = 'flex';
+                        document.getElementById('detWoodVolume').textContent = data.detailedMaterials.wood.volume;
+                        document.getElementById('detWoodCost').textContent = `${formatDigit(data.detailedMaterials.wood.cost)} ₸`;
+                    } else {
+                        document.getElementById('detWoodRow').style.display = 'none';
+                    }
+                }
 
             } catch (err) {
                 console.error("Calculation fetch failed:", err);
@@ -600,30 +687,32 @@
         const angleLabelText = document.getElementById('angleLabelText');
         const dormerSection = document.getElementById('dormerSection');
 
-        [roofShapeInput, materialSel, wasteInput, laborInput].forEach(el => el.addEventListener('input', () => {
-            needsCalcUpdate = true;
-            if (el === materialSel || el === roofShapeInput) {
-                needs3DUpdate = true;
-            }
-            if (el === roofShapeInput) {
-                if (roofShapeInput.value === 'flat') {
-                    angleGroup.style.display = 'none';
-                } else {
-                    angleGroup.style.display = 'block';
-                    if (roofShapeInput.value === 'mansard') {
-                        angleLabelText.textContent = 'Крутизна нижнего ската:';
+        ['input', 'change'].forEach(eventType => {
+            [roofShapeInput, materialSel, wasteInput, sheetWidthInput, laborInput, overhangInput, includeInsulationCb, includeWoodCb].forEach(el => el.addEventListener(eventType, () => {
+                needsCalcUpdate = true;
+                if (el === materialSel || el === roofShapeInput || el === overhangInput) {
+                    needs3DUpdate = true;
+                }
+                if (el === roofShapeInput) {
+                    if (roofShapeInput.value === 'flat') {
+                        angleGroup.style.display = 'none';
                     } else {
-                        angleLabelText.textContent = 'Угол наклона скатов:';
+                        angleGroup.style.display = 'block';
+                        if (roofShapeInput.value === 'mansard') {
+                            angleLabelText.textContent = 'Крутизна нижнего ската:';
+                        } else {
+                            angleLabelText.textContent = 'Угол наклона скатов:';
+                        }
+                    }
+
+                    if (roofShapeInput.value === 'gable' || roofShapeInput.value === 'hip') {
+                        dormerSection.style.display = 'block';
+                    } else {
+                        dormerSection.style.display = 'none';
                     }
                 }
-
-                if (roofShapeInput.value === 'gable' || roofShapeInput.value === 'hip') {
-                    dormerSection.style.display = 'block';
-                } else {
-                    dormerSection.style.display = 'none';
-                }
-            }
-        }));
+            }));
+        });
 
         resetBtn.addEventListener('click', () => {
             lengthInput.value = 10;
@@ -631,7 +720,10 @@
             angleInput.value = 30;
             materialSel.selectedIndex = 1;
             wasteInput.value = 15;
-            laborInput.value = 3500;
+            sheetWidthInput.value = 1.15;
+            laborInput.value = 4500;
+            includeInsulationCb.checked = false;
+            includeWoodCb.checked = false;
             dormerConfig = [];
             angleVal.textContent = "30";
 

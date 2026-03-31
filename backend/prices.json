@@ -1,0 +1,22 @@
+{
+  "materials": [
+    { "id": "metal_econom", "name": "Металлочерепица (Эконом)", "price": 2800, "color": "0x7f1d1d" },
+    { "id": "metal_premium", "name": "Металлочерепица (Премиум)", "price": 4800, "color": "0x334155", "selected": true },
+    { "id": "prof", "name": "Профнастил", "price": 2500, "color": "0x94a3b8" },
+    { "id": "soft", "name": "Мягкая кровля (Битумная)", "price": 4500, "color": "0x78350f" },
+    { "id": "comp", "name": "Композитная черепица", "price": 9500, "color": "0x14532d" }
+  ],
+  "accessories": {
+    "ridgePrice": 1200,
+    "screwPrice": 30,
+    "screwsPerPack": 300,
+    "screwsPerSqM": 9,
+    "membraneHydro": 350,
+    "membraneVapor": 250,
+    "insulationPrice": 18000,
+    "woodPrice": 125000
+  },
+  "labor": {
+    "defaultRate": 4500
+  }
+}
