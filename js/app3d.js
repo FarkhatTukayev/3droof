@@ -11,6 +11,88 @@ let dragControls;
 window.resizeHandles = [];
 window.activeDragHandle = null;
 
+const textureCache = {};
+
+function getBumpMap(type) {
+    if (textureCache[type]) return textureCache[type];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    if (type === 'metal-tile') {
+        ctx.fillStyle = '#888';
+        ctx.fillRect(0, 0, 512, 512);
+        for (let y = 0; y < 512; y += 64) {
+            const grad = ctx.createLinearGradient(0, y, 0, y + 64);
+            grad.addColorStop(0, '#aaa');
+            grad.addColorStop(0.8, '#777');
+            grad.addColorStop(1, '#222');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, y, 512, 64);
+        }
+        ctx.globalCompositeOperation = 'overlay';
+        for (let x = 0; x < 512; x += 64) {
+            const waveGrad = ctx.createLinearGradient(x, 0, x + 64, 0);
+            waveGrad.addColorStop(0, '#666');
+            waveGrad.addColorStop(0.5, '#ddd');
+            waveGrad.addColorStop(1, '#666');
+            ctx.fillStyle = waveGrad;
+            ctx.fillRect(x, 0, 64, 512);
+        }
+    } else if (type === 'corrugated') {
+        ctx.fillStyle = '#888';
+        ctx.fillRect(0, 0, 512, 512);
+        for (let x = 0; x < 512; x += 32) {
+            const grad = ctx.createLinearGradient(x, 0, x + 32, 0);
+            grad.addColorStop(0, '#222');
+            grad.addColorStop(0.2, '#aaa');
+            grad.addColorStop(0.8, '#aaa');
+            grad.addColorStop(1, '#222');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, 0, 32, 512);
+        }
+    } else if (type === 'bitumen') {
+        ctx.fillStyle = '#666';
+        ctx.fillRect(0, 0, 512, 512);
+        const imgData = ctx.getImageData(0, 0, 512, 512);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            const noise = Math.random() * 80 - 40;
+            imgData.data[i] = Math.max(0, Math.min(255, imgData.data[i] + noise));
+            imgData.data[i + 1] = Math.max(0, Math.min(255, imgData.data[i + 1] + noise));
+            imgData.data[i + 2] = Math.max(0, Math.min(255, imgData.data[i + 2] + noise));
+        }
+        ctx.putImageData(imgData, 0, 0);
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 6;
+        let row = 0;
+        for (let y = 0; y < 512; y += 48) {
+            let offset = (row % 2) * 48;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(512, y);
+            ctx.stroke();
+            for (let x = -offset; x < 512; x += 96) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + 48);
+                ctx.stroke();
+            }
+            row++;
+        }
+    } else {
+        ctx.fillStyle = '#888';
+        ctx.fillRect(0, 0, 512, 512);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    textureCache[type] = tex;
+    return tex;
+}
+
 // Initialize 3D context
 window.init3D = function () {
     const container = document.getElementById('canvas-container');
@@ -164,7 +246,7 @@ function createGableShape(w, h) {
     return shape;
 }
 
-function createRoofMesh(shape, depth, colorHex) {
+function createRoofMesh(shape, depth, colorHex, matType) {
     const extrudeSettings = { depth: depth, bevelEnabled: false };
     const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geometry.computeBoundingBox();
@@ -175,10 +257,17 @@ function createRoofMesh(shape, depth, colorHex) {
         -(bBox.max.z - bBox.min.z) / 2
     );
 
+    const baseTex = getBumpMap(matType || 'metal-tile');
+    const bumpTexture = baseTex.clone();
+    bumpTexture.needsUpdate = true;
+    bumpTexture.repeat.set(0.5, 0.5);
+
     const material = new THREE.MeshStandardMaterial({
         color: colorHex,
-        roughness: 0.7,
-        metalness: 0.2,
+        roughness: matType === 'metal-tile' || matType === 'corrugated' ? 0.6 : 0.9,
+        metalness: matType === 'metal-tile' ? 0.3 : (matType === 'corrugated' ? 0.4 : 0.05),
+        bumpMap: bumpTexture,
+        bumpScale: 0.05,
         side: THREE.DoubleSide
     });
     const mesh = new THREE.Mesh(geometry, material);
@@ -214,6 +303,10 @@ window.build3DModel = function () {
     labelMeshes = [];
 
     const matId = document.getElementById('material').value;
+    let matType = 'metal-tile';
+    if (matId == 2500) matType = 'corrugated';
+    else if (matId == 4500) matType = 'bitumen';
+
     let roofColor = 0x1e293b;
     if (window.materialColorMap && window.materialColorMap[matId]) {
         roofColor = window.materialColorMap[matId];
@@ -270,6 +363,14 @@ window.build3DModel = function () {
             -w2 + inset2, h2, -l2 + inset2, w2 - inset2, h2, -l2 + inset2, w2 - inset2, h2, l2 - inset2, -w2 + inset2, h2, l2 - inset2,
         ]);
         geom.setAttribute('position', new THREE.BufferAttribute(v, 3));
+
+        const uvs = new Float32Array((v.length / 3) * 2);
+        for (let i = 0; i < v.length / 3; i++) {
+            uvs[i * 2] = v[i * 3];
+            uvs[i * 2 + 1] = v[i * 3 + 2];
+        }
+        geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
         let indices = [
             0, 5, 1, 0, 4, 5,
             1, 6, 2, 1, 5, 6,
@@ -292,10 +393,17 @@ window.build3DModel = function () {
         mainRoofGeo = geom;
     }
 
+    const baseTex = getBumpMap(matType);
+    const bumpTexture = baseTex.clone();
+    bumpTexture.needsUpdate = true;
+    bumpTexture.repeat.set(0.5, 0.5);
+
     const material = new THREE.MeshStandardMaterial({
         color: roofColor,
-        roughness: 0.7,
-        metalness: 0.2,
+        roughness: matType === 'metal-tile' || matType === 'corrugated' ? 0.6 : 0.9,
+        metalness: matType === 'metal-tile' ? 0.3 : (matType === 'corrugated' ? 0.4 : 0.05),
+        bumpMap: bumpTexture,
+        bumpScale: 0.05,
         side: THREE.DoubleSide
     });
     const mainRoof = new THREE.Mesh(mainRoofGeo, material);
@@ -341,7 +449,7 @@ window.build3DModel = function () {
             const dShape = createGableShape(dormer.width, dHeight);
             const dExtrusion = dormer.projection + (wid / 2);
 
-            const dRoof = createRoofMesh(dShape, dExtrusion, roofColor);
+            const dRoof = createRoofMesh(dShape, dExtrusion, roofColor, matType);
 
             dRoof.rotation.y = Math.PI / 2;
             const posZ = dormer.position;
