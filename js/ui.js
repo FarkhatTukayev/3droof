@@ -211,8 +211,14 @@ window.removeDormer = (index) => {
     recalculateNumbers();
 };
 
-async function recalculateNumbers() {
+let calcTimeout = null;
+window.recalculateNumbers = function () {
     window.needsCalcUpdate = false;
+    clearTimeout(calcTimeout);
+    calcTimeout = setTimeout(_recalculateNumbers, 200);
+};
+
+async function _recalculateNumbers() {
     const payload = {
         length: parseFloat(document.getElementById('length').value) || 0,
         width: parseFloat(document.getElementById('width').value) || 0,

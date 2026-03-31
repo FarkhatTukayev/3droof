@@ -1,11 +1,23 @@
+// app3d.js
+// 3D Rendering logic using Three.js
+
 const scene = new THREE.Scene();
+window.scene = scene;
+
 let camera, renderer, labelRenderer, controls;
 let roofMeshes = [];
 let labelMeshes = [];
+let dragControls;
+window.resizeHandles = [];
+window.activeDragHandle = null;
 
-function init3D() {
+// Initialize 3D context
+window.init3D = function () {
     const container = document.getElementById('canvas-container');
+
     camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 1000);
+    window.camera = camera;
+
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -21,6 +33,7 @@ function init3D() {
     container.appendChild(labelRenderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    window.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
@@ -54,7 +67,92 @@ function init3D() {
     groundObj.receiveShadow = true;
     scene.add(groundObj);
 
+    // --- Interactive Drag Handles ---
+    const handleGeo = new THREE.SphereGeometry(0.4, 32, 32);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.1 });
+
+    const handleZPos = new THREE.Mesh(handleGeo, handleMat.clone()); handleZPos.userData = { axis: 'z', sign: 1 };
+    const handleZNeg = new THREE.Mesh(handleGeo, handleMat.clone()); handleZNeg.userData = { axis: 'z', sign: -1 };
+    const handleXPos = new THREE.Mesh(handleGeo, handleMat.clone()); handleXPos.userData = { axis: 'x', sign: 1 };
+    const handleXNeg = new THREE.Mesh(handleGeo, handleMat.clone()); handleXNeg.userData = { axis: 'x', sign: -1 };
+
+    window.resizeHandles = [handleZPos, handleZNeg, handleXPos, handleXNeg];
+    window.resizeHandles.forEach(h => {
+        h.castShadow = true;
+        scene.add(h);
+    });
+
+    if (THREE.DragControls) {
+        dragControls = new THREE.DragControls(window.resizeHandles, camera, renderer.domElement);
+
+        dragControls.addEventListener('dragstart', function (event) {
+            if (controls) controls.enabled = false;
+            window.activeDragHandle = event.object;
+            event.object.material.emissive.setHex(0x3b82f6);
+            event.object.material.emissiveIntensity = 0.5;
+            document.body.style.cursor = 'grabbing';
+        });
+
+        dragControls.addEventListener('dragend', function (event) {
+            if (controls) controls.enabled = true;
+            window.activeDragHandle = null;
+            event.object.material.emissive.setHex(0x000000);
+            document.body.style.cursor = 'auto';
+            window.needs3DUpdate = true; // Force final snap
+            if (typeof recalculateNumbers === 'function') recalculateNumbers();
+        });
+
+        dragControls.addEventListener('drag', function (event) {
+            const obj = event.object;
+            if (obj.userData.axis === 'x') {
+                obj.position.y = 0; // Lock Y
+                obj.position.z = 0; // Lock Z
+                let newWidth = obj.position.x * obj.userData.sign * 2;
+                newWidth = Math.max(2, Math.min(50, newWidth));
+                newWidth = Math.round(newWidth * 2) / 2; // Snap to 0.5
+                const wInp = document.getElementById('width');
+                if (parseFloat(wInp.value) !== newWidth) {
+                    wInp.value = newWidth;
+                    wInp.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } else if (obj.userData.axis === 'z') {
+                obj.position.x = 0; // Lock X
+                obj.position.y = 0; // Lock Y
+                let newLength = obj.position.z * obj.userData.sign * 2;
+                newLength = Math.max(2, Math.min(50, newLength));
+                newLength = Math.round(newLength * 2) / 2; // Snap to 0.5
+                const lInp = document.getElementById('length');
+                if (parseFloat(lInp.value) !== newLength) {
+                    lInp.value = newLength;
+                    lInp.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
+
+        dragControls.addEventListener('hoveron', function () {
+            document.body.style.cursor = 'grab';
+        });
+
+        dragControls.addEventListener('hoveroff', function () {
+            document.body.style.cursor = 'auto';
+        });
+    }
+
+    // Call animation loop once
     animate();
+
+    // Add window resize listener
+    window.addEventListener('resize', onWindowResize);
+};
+
+function onWindowResize() {
+    const container = document.getElementById('canvas-container');
+    if (container && container.clientWidth && container.clientHeight) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        labelRenderer.setSize(container.clientWidth, container.clientHeight);
+    }
 }
 
 function createGableShape(w, h) {
@@ -71,7 +169,11 @@ function createRoofMesh(shape, depth, colorHex) {
     const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geometry.computeBoundingBox();
     const bBox = geometry.boundingBox;
-    geometry.translate(-(bBox.max.x - bBox.min.x) / 2, 0, -(bBox.max.z - bBox.min.z) / 2);
+    geometry.translate(
+        -(bBox.max.x - bBox.min.x) / 2,
+        0,
+        -(bBox.max.z - bBox.min.z) / 2
+    );
 
     const material = new THREE.MeshStandardMaterial({
         color: colorHex,
@@ -90,24 +192,35 @@ function createRoofMesh(shape, depth, colorHex) {
     return mesh;
 }
 
-function build3DModel() {
+window.build3DModel = function () {
     if (!window.needs3DUpdate) return;
     window.needs3DUpdate = false;
 
-    const baseLen = parseFloat(document.getElementById('length').value) || 10;
-    const baseWid = parseFloat(document.getElementById('width').value) || 8;
-    const overhang = parseFloat(document.getElementById('overhang').value) || 0;
+    const lengthInput = document.getElementById('length');
+    const widthInput = document.getElementById('width');
+    const overhangInput = document.getElementById('overhang');
+    const angleInput = document.getElementById('angle');
+
+    const baseLen = parseFloat(lengthInput ? lengthInput.value : 10) || 10;
+    const baseWid = parseFloat(widthInput ? widthInput.value : 8) || 8;
+    const overhang = parseFloat(overhangInput ? overhangInput.value : 0.5) || 0;
     const len = baseLen + (2 * overhang);
     const wid = baseWid + (2 * overhang);
-    const angleDeg = parseFloat(document.getElementById('angle').value) || 30;
+    const angleDeg = parseFloat(angleInput ? angleInput.value : 30) || 30;
 
     roofMeshes.forEach(m => scene.remove(m));
     roofMeshes = [];
     labelMeshes.forEach(m => scene.remove(m));
     labelMeshes = [];
 
-    const currentMaterialValue = document.getElementById('material').value;
-    const roofColor = window.materialColorMap?.[currentMaterialValue] || 0x1e293b;
+    const matId = document.getElementById('material').value;
+    let roofColor = 0x1e293b;
+    if (window.materialColorMap && window.materialColorMap[matId]) {
+        roofColor = window.materialColorMap[matId];
+    } else {
+        // Fallback colors if not matched
+        roofColor = 0x334155;
+    }
 
     const height = Math.tan(angleDeg * Math.PI / 180) * (wid / 2);
     const shapeType = document.getElementById('roofShape').value;
@@ -157,9 +270,20 @@ function build3DModel() {
             -w2 + inset2, h2, -l2 + inset2, w2 - inset2, h2, -l2 + inset2, w2 - inset2, h2, l2 - inset2, -w2 + inset2, h2, l2 - inset2,
         ]);
         geom.setAttribute('position', new THREE.BufferAttribute(v, 3));
-        let indices = [0, 5, 1, 0, 4, 5, 1, 6, 2, 1, 5, 6, 2, 7, 3, 2, 6, 7, 3, 4, 0, 3, 7, 4];
+        let indices = [
+            0, 5, 1, 0, 4, 5,
+            1, 6, 2, 1, 5, 6,
+            2, 7, 3, 2, 6, 7,
+            3, 4, 0, 3, 7, 4
+        ];
         if (shapeType === 'mansard') {
-            indices.push(4, 9, 5, 4, 8, 9, 5, 10, 6, 5, 9, 10, 6, 11, 7, 6, 10, 11, 7, 8, 4, 7, 11, 8, 8, 10, 9, 8, 11, 10);
+            indices.push(
+                4, 9, 5, 4, 8, 9,
+                5, 10, 6, 5, 9, 10,
+                6, 11, 7, 6, 10, 11,
+                7, 8, 4, 7, 11, 8,
+                8, 10, 9, 8, 11, 10
+            );
         } else {
             indices.push(4, 6, 5, 4, 7, 6);
         }
@@ -168,7 +292,12 @@ function build3DModel() {
         mainRoofGeo = geom;
     }
 
-    const material = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.7, metalness: 0.2, side: THREE.DoubleSide });
+    const material = new THREE.MeshStandardMaterial({
+        color: roofColor,
+        roughness: 0.7,
+        metalness: 0.2,
+        side: THREE.DoubleSide
+    });
     const mainRoof = new THREE.Mesh(mainRoofGeo, material);
     mainRoof.castShadow = true;
     mainRoof.receiveShadow = true;
@@ -176,6 +305,7 @@ function build3DModel() {
     const edges = new THREE.EdgesGeometry(mainRoofGeo);
     const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.15, transparent: true }));
     mainRoof.add(line);
+
     scene.add(mainRoof);
     roofMeshes.push(mainRoof);
 
@@ -188,63 +318,77 @@ function build3DModel() {
     scene.add(baseMesh);
     roofMeshes.push(baseMesh);
 
-    const lBadge = new THREE.CSS2DObject(createBadge(`${baseLen} м`));
-    lBadge.position.set(baseWid / 2 + 0.1, -2.5, 0);
-    scene.add(lBadge);
-    labelMeshes.push(lBadge);
+    const lengthDiv = document.createElement('div');
+    lengthDiv.className = 'dimension-badge';
+    lengthDiv.textContent = `${baseLen} м`;
+    const lengthLabel = new THREE.CSS2DObject(lengthDiv);
+    lengthLabel.position.set(baseWid / 2 + 0.1, -2.5, 0);
+    scene.add(lengthLabel);
+    labelMeshes.push(lengthLabel);
 
-    const wBadge = new THREE.CSS2DObject(createBadge(`${baseWid} м`));
-    wBadge.position.set(0, -2.5, baseLen / 2 + 0.1);
-    scene.add(wBadge);
-    labelMeshes.push(wBadge);
+    const widthDiv = document.createElement('div');
+    widthDiv.className = 'dimension-badge';
+    widthDiv.textContent = `${baseWid} м`;
+    const widthLabel = new THREE.CSS2DObject(widthDiv);
+    widthLabel.position.set(0, -2.5, baseLen / 2 + 0.1);
+    scene.add(widthLabel);
+    labelMeshes.push(widthLabel);
 
-    if (shapeType === 'gable' || shapeType === 'hip') {
+    const canHaveDormers = (shapeType === 'gable' || shapeType === 'hip');
+    if (canHaveDormers && window.dormerConfig) {
         window.dormerConfig.forEach((dormer) => {
-            const dH = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
-            const dRoof = createRoofMesh(createGableShape(dormer.width, dH), dormer.projection + (wid / 2), roofColor);
+            const dHeight = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
+            const dShape = createGableShape(dormer.width, dHeight);
+            const dExtrusion = dormer.projection + (wid / 2);
+
+            const dRoof = createRoofMesh(dShape, dExtrusion, roofColor);
+
             dRoof.rotation.y = Math.PI / 2;
-            const shiftOut = (wid / 2) + (dormer.projection / 2) - ((dormer.projection + (wid / 2)) / 2) - 0.05;
-            dRoof.position.set(shiftOut, 0, dormer.position);
+            const posZ = dormer.position;
+            const shiftOut = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+
+            dRoof.position.set(shiftOut, 0, posZ);
             scene.add(dRoof);
             roofMeshes.push(dRoof);
 
-            const dBase = new THREE.Mesh(new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4), baseMat);
-            dBase.position.set(shiftOut - 0.1, -2.5, dormer.position);
-            dBase.receiveShadow = true; dBase.castShadow = true;
-            scene.add(dBase);
-            roofMeshes.push(dBase);
+            const dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+            const dBaseMesh = new THREE.Mesh(dBaseGeo, baseMat);
+            dBaseMesh.position.set(shiftOut - 0.1, -2.5, posZ);
+            dBaseMesh.receiveShadow = true;
+            dBaseMesh.castShadow = true;
+            scene.add(dBaseMesh);
+            roofMeshes.push(dBaseMesh);
         });
     }
 
     const maxDim = Math.max(len, wid);
     controls.target.set(0, height / 2, 0);
+
     if (!window.cameraInitialized) {
         camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
         window.cameraInitialized = true;
     }
-}
 
-function createBadge(text) {
-    const div = document.createElement('div');
-    div.className = 'dimension-badge';
-    div.textContent = text;
-    return div;
+    // Sync handle positions to match dimensions unless actively dragged
+    if (window.resizeHandles && window.resizeHandles.length === 4) {
+        if (window.activeDragHandle !== window.resizeHandles[0]) window.resizeHandles[0].position.set(0, 0, baseLen / 2);
+        if (window.activeDragHandle !== window.resizeHandles[1]) window.resizeHandles[1].position.set(0, 0, -baseLen / 2);
+        if (window.activeDragHandle !== window.resizeHandles[2]) window.resizeHandles[2].position.set(baseWid / 2, 0, 0);
+        if (window.activeDragHandle !== window.resizeHandles[3]) window.resizeHandles[3].position.set(-baseWid / 2, 0, 0);
+    }
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    controls.update();
-    if (window.needs3DUpdate) build3DModel();
-    renderer.render(scene, camera);
-    labelRenderer.render(scene, camera);
-}
 
-window.addEventListener('resize', () => {
-    const container = document.getElementById('canvas-container');
-    if (container.clientWidth && container.clientHeight) {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        labelRenderer.setSize(container.clientWidth, container.clientHeight);
+    if (controls) controls.update();
+
+    if (window.needs3DUpdate && typeof window.build3DModel === 'function') {
+        window.build3DModel();
     }
-});
+
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        if (labelRenderer) labelRenderer.render(scene, camera);
+    }
+}
