@@ -736,26 +736,77 @@ input[type="number"]::-webkit-inner-spin-button {
 
     .container {
         height: auto;
-        padding-top: 80px;
+        padding-top: 73px;
+        display: flex;
+        flex-direction: column;
     }
 
     .visual-area {
         position: relative;
-        height: 60vh;
-        min-height: 400px;
+        height: 50vh;
+        min-height: 350px;
+        order: 1;
+        z-index: 2;
     }
 
     .floating-panel {
         position: static;
         width: 100%;
-        margin-bottom: 24px;
+        margin-bottom: 0;
         border-radius: 0;
         border-left: none;
         border-right: none;
         box-shadow: none;
+        padding: 20px 16px;
+        order: 2;
+    }
+
+    .right-panel {
+        order: 3;
+        border-top: 1px solid var(--border);
     }
 
     .canvas-hint {
         bottom: 12px;
+        font-size: 11px;
+        padding: 6px 12px;
+        width: 90%;
+        text-align: center;
+    }
+}
+
+@media(max-width: 600px) {
+    .topbar {
+        padding: 12px 16px;
+    }
+
+    .brand p {
+        display: none;
+    }
+
+    .brand h1 {
+        font-size: 16px;
+    }
+
+    .btn-small {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .visual-area {
+        height: 40vh;
+        min-height: 280px;
+    }
+
+    .total-sum {
+        font-size: 26px;
+    }
+
+    .currency {
+        font-size: 18px;
     }
 }
