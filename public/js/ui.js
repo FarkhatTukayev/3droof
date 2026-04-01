@@ -6,6 +6,11 @@ window.cameraInitialized = false;
 window.wasteVisible = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const mainTooltip = document.createElement('div');
+    mainTooltip.id = 'globalTooltip';
+    mainTooltip.className = 'global-tooltip';
+    document.body.appendChild(mainTooltip);
+
     await loadPrices();
     if (typeof init3D === 'function') {
         init3D();
@@ -16,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadPrices() {
     try {
-        const res = await fetch('http://localhost:3000/api/prices');
+        const res = await fetch('/api/prices');
         const data = await res.json();
 
         const matContainer = document.getElementById('materialSwatchesContainer');
@@ -39,6 +44,21 @@ async function loadPrices() {
                 }
                 swatch.style.backgroundColor = colorHex;
                 swatch.setAttribute('data-tooltip', `${m.name} - ${m.price.toLocaleString('ru-RU')} ₸/м²`);
+
+                swatch.addEventListener('mouseenter', () => {
+                    const gt = document.getElementById('globalTooltip');
+                    if (gt) {
+                        gt.textContent = swatch.getAttribute('data-tooltip');
+                        const rect = swatch.getBoundingClientRect();
+                        gt.style.left = rect.left + rect.width / 2 + 'px';
+                        gt.style.top = rect.top - 8 + 'px';
+                        gt.classList.add('show');
+                    }
+                });
+                swatch.addEventListener('mouseleave', () => {
+                    const gt = document.getElementById('globalTooltip');
+                    if (gt) gt.classList.remove('show');
+                });
 
                 const icons = {
                     'metal_econom': '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M2 14l5-5 5 5 5-5 5 5"/><path d="M2 20l5-5 5 5 5-5 5 5"/></svg>',
@@ -321,7 +341,7 @@ async function _recalculateNumbers() {
     if (wastePctDisplay) wastePctDisplay.textContent = payload.wastePct;
 
     try {
-        const res = await fetch('http://localhost:3000/api/calculate', {
+        const res = await fetch('/api/calculate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

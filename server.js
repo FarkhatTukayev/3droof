@@ -1,11 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const fs = require('fs');
 const path = require('path');
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 function getPrices() {
     const data = fs.readFileSync(path.join(__dirname, 'prices.json'), 'utf8');
     return JSON.parse(data);
@@ -24,7 +25,7 @@ app.post('/api/calculate', (req, res) => {
         length = 0,
         width = 0,
         angle = 0,
-        materialPrice = 0, 
+        materialPrice = 0,
         wastePct = 0,
         sheetWidth = 1.15,
         laborRate = 0,
@@ -44,7 +45,7 @@ app.post('/api/calculate', (req, res) => {
     const effLength = Math.ceil(realLength / sheetWidth) * sheetWidth;
     const effWidth = Math.ceil(realWidth / sheetWidth) * sheetWidth;
     if (roofShape === 'flat') {
-        netArea = baseArea * 1.05; 
+        netArea = baseArea * 1.05;
         grossArea = (effLength * effWidth) * 1.05;
         ridgeLength = 0;
     } else if (roofShape === 'mansard') {
@@ -63,19 +64,19 @@ app.post('/api/calculate', (req, res) => {
         const areaLower = lowerRingArea / Math.cos(lowerPitch);
         const areaUpper = innerArea / Math.cos(upperPitch);
         netArea = areaLower + areaUpper;
-        grossArea = netArea * (effLength / realLength); 
+        grossArea = netArea * (effLength / realLength);
         ridgeLength = Math.max(0, realLength - realWidth);
     } else if (roofShape === 'hip') {
         netArea = baseArea / Math.cos(rad);
-        grossArea = (effLength * effWidth) / Math.cos(rad); 
+        grossArea = (effLength * effWidth) / Math.cos(rad);
         ridgeLength = Math.max(0, realLength - realWidth);
     } else if (roofShape === 'shed') {
         netArea = baseArea / Math.cos(rad);
-        grossArea = (effLength * realWidth) / Math.cos(rad); 
+        grossArea = (effLength * realWidth) / Math.cos(rad);
         ridgeLength = 0;
     } else {
         netArea = baseArea / Math.cos(rad);
-        grossArea = (effLength * realWidth) / Math.cos(rad); 
+        grossArea = (effLength * realWidth) / Math.cos(rad);
         ridgeLength = realLength;
     }
     if ((roofShape === 'gable' || roofShape === 'hip') && Array.isArray(dormers)) {
@@ -96,12 +97,12 @@ app.post('/api/calculate', (req, res) => {
     const packsCount = Math.ceil(requiredScrews / prices.accessories.screwsPerPack);
     const screwsCount = packsCount * prices.accessories.screwsPerPack;
     const screwsCost = screwsCount * prices.accessories.screwPrice;
-    const membraneArea = Math.ceil(netArea * 1.15); 
+    const membraneArea = Math.ceil(netArea * 1.15);
     const membraneCost = membraneArea * (prices.accessories.membraneHydro + prices.accessories.membraneVapor);
     let insulationVolume = 0;
     let insulationCost = 0;
     if (includeInsulation) {
-        insulationVolume = Math.ceil(netArea * 0.2 * 10) / 10; 
+        insulationVolume = Math.ceil(netArea * 0.2 * 10) / 10;
         insulationCost = Math.round(insulationVolume * prices.accessories.insulationPrice);
     }
     let woodVolume = 0;

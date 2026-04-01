@@ -373,33 +373,30 @@ label {
     justify-content: center;
 }
 
-/* If you have a custom tooltip class */
-.swatch::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 110%;
-    left: 50%;
-    transform: translateX(-50%) scale(0.9);
-    opacity: 0;
+/* Global tooltip appended to body */
+.global-tooltip {
+    position: fixed;
+    pointer-events: none;
     background: var(--text-main);
     color: var(--bg-page);
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
-    pointer-events: none;
-    transition: 0.2s ease;
-    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    transform: translate(-50%, -50%) scale(0.9);
+    z-index: 999999;
+}
+
+.global-tooltip.show {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
 }
 
 .swatch:hover {
     transform: scale(1.1);
-}
-
-.swatch:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
 }
 
 .swatch.selected {
