@@ -154,28 +154,28 @@ window.init3D = function () {
             window.activeDragHandle = null;
             event.object.material.emissive.setHex(0x000000);
             document.body.style.cursor = 'auto';
-            window.needs3DUpdate = true; 
+            window.needs3DUpdate = true;
             if (typeof recalculateNumbers === 'function') recalculateNumbers();
         });
         dragControls.addEventListener('drag', function (event) {
             const obj = event.object;
             if (obj.userData.axis === 'x') {
-                obj.position.y = 0; 
-                obj.position.z = 0; 
+                obj.position.y = 0;
+                obj.position.z = 0;
                 let newWidth = obj.position.x * obj.userData.sign * 2;
                 newWidth = Math.max(2, Math.min(50, newWidth));
-                newWidth = Math.round(newWidth * 2) / 2; 
+                newWidth = Math.round(newWidth * 2) / 2;
                 const wInp = document.getElementById('width');
                 if (parseFloat(wInp.value) !== newWidth) {
                     wInp.value = newWidth;
                     wInp.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             } else if (obj.userData.axis === 'z') {
-                obj.position.x = 0; 
-                obj.position.y = 0; 
+                obj.position.x = 0;
+                obj.position.y = 0;
                 let newLength = obj.position.z * obj.userData.sign * 2;
                 newLength = Math.max(2, Math.min(50, newLength));
-                newLength = Math.round(newLength * 2) / 2; 
+                newLength = Math.round(newLength * 2) / 2;
                 const lInp = document.getElementById('length');
                 if (parseFloat(lInp.value) !== newLength) {
                     lInp.value = newLength;
@@ -370,14 +370,32 @@ window.build3DModel = function () {
     roofMeshes.push(baseMesh);
     const lengthDiv = document.createElement('div');
     lengthDiv.className = 'dimension-badge';
+    lengthDiv.title = 'Кликните для редактирования длины';
     lengthDiv.textContent = `${baseLen} м`;
+    lengthDiv.onclick = () => {
+        const inp = document.getElementById('length');
+        if (inp) {
+            inp.focus();
+            inp.classList.add('flash-highlight');
+            setTimeout(() => inp.classList.remove('flash-highlight'), 1000);
+        }
+    };
     const lengthLabel = new THREE.CSS2DObject(lengthDiv);
     lengthLabel.position.set(baseWid / 2 + 0.1, -2.5, 0);
     scene.add(lengthLabel);
     labelMeshes.push(lengthLabel);
     const widthDiv = document.createElement('div');
     widthDiv.className = 'dimension-badge';
+    widthDiv.title = 'Кликните для редактирования ширины';
     widthDiv.textContent = `${baseWid} м`;
+    widthDiv.onclick = () => {
+        const inp = document.getElementById('width');
+        if (inp) {
+            inp.focus();
+            inp.classList.add('flash-highlight');
+            setTimeout(() => inp.classList.remove('flash-highlight'), 1000);
+        }
+    };
     const widthLabel = new THREE.CSS2DObject(widthDiv);
     widthLabel.position.set(0, -2.5, baseLen / 2 + 0.1);
     scene.add(widthLabel);
@@ -404,6 +422,33 @@ window.build3DModel = function () {
             roofMeshes.push(dBaseMesh);
         });
     }
+    if (window.wasteVisible) {
+        const wasteMeshes = [];
+        roofMeshes.forEach(mesh => {
+            if (mesh.material && mesh.material.color && mesh.material.color.getHex() !== 0xf8fafc) {
+                const wasteGeo = mesh.geometry.clone();
+                const wasteMat = new THREE.MeshBasicMaterial({
+                    color: 0xef4444,
+                    transparent: true,
+                    opacity: 0.15,
+                    side: THREE.DoubleSide
+                });
+                const wMesh = new THREE.Mesh(wasteGeo, wasteMat);
+                wMesh.position.copy(mesh.position);
+                wMesh.rotation.copy(mesh.rotation);
+                wMesh.scale.set(1.05, 1.05, 1.05);
+                scene.add(wMesh);
+                wasteMeshes.push(wMesh);
+
+                const edges = new THREE.EdgesGeometry(wasteGeo);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xef4444, opacity: 0.5, transparent: true }));
+                wMesh.add(line);
+                wasteMeshes.push(line);
+            }
+        });
+        roofMeshes = roofMeshes.concat(wasteMeshes);
+    }
+
     const maxDim = Math.max(len, wid);
     controls.target.set(0, height / 2, 0);
     if (!window.cameraInitialized) {
