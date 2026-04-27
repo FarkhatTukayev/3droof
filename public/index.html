@@ -6,6 +6,7 @@
     <title>3D Калькулятор кровли PRO | Тенге</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
@@ -32,13 +33,13 @@
     </header>
 
     <div class="container">
-        <!-- Левая сторона: Инженерный узел -->
+        
         <aside id="left-panel" class="floating-panel left-panel">
             <div>
                 <div class="section-title">
                     <span>Инженерный узел (Конструкция)</span>
                 </div>
-                <!-- Selector Cards for Roof Shape -->
+                
                 <div class="form-group">
                     <label>Форма крыши</label>
                     <div class="selector-cards" id="roofShapeCards">
@@ -91,7 +92,7 @@
                 </div>
             </div>
 
-            <!-- Dormer Section as an accordion -->
+            
             <details id="dormerSection" class="custom-accordion">
                 <summary class="section-title" style="cursor: pointer; margin-bottom: 0;">
                     <span>Врезки и окна ▼</span>
@@ -106,18 +107,18 @@
             </details>
         </aside>
 
-        <!-- Правая сторона: Коммерческий узел -->
+        
         <aside id="right-panel" class="floating-panel right-panel">
             <div>
                 <div class="section-title">
                     <span>Коммерческий узел (Смета)</span>
                 </div>
                 
-                <!-- Material Swatches -->
+                
                 <div class="form-group">
                     <label>Покрытие крыши</label>
                     <div class="material-swatches" id="materialSwatchesContainer">
-                        <!-- Populated by JS -->
+                        
                     </div>
                     <input type="hidden" id="material" value="4800">
                 </div>
@@ -140,7 +141,7 @@
                     </div>
                 </div>
 
-                <!-- Toggle Switches for Add-ons -->
+                
                 <div class="toggles-group" style="margin-top: 16px;">
                     <label class="toggle-row">
                         <span style="font-size: 13px; font-weight: 500;">Утепление 200мм (Минвата)</span>
@@ -158,7 +159,7 @@
                     </label>
                 </div>
 
-                <!-- Stats -->
+                
                 <div class="stat-row" style="margin-top: 24px;">
                     <span class="stat-label">Площадь скатов (чистая)</span>
                     <span class="stat-value" id="netAreaVal">— м²</span>
@@ -179,7 +180,7 @@
                     <span style="font-size: 16px; color: var(--text-muted); margin-left:8px;" id="receiptChevron">▼</span>
                 </div>
 
-                <!-- Live Receipt -->
+                
                 <div id="detailedMaterialsBlock" class="live-receipt" style="display: none;">
                     <div class="receipt-row">
                         <span style="color: var(--text-muted)">Материалы крыши</span>
@@ -215,7 +216,7 @@
             </div>
         </aside>
 
-        <!-- 3D Area -->
+        
         <main class="visual-area">
             <div id="canvas-container"></div>
             <div class="canvas-hint">Удержание ЛКМ: вращение • Колесико: зум • Клик по метке: фокус размера</div>

@@ -17,7 +17,7 @@
     --input-bg: #f8fafc;
     --input-focus: #ffffff;
 
-    /* New Floating Panel Theme Variables */
+    
     --panel-bg: rgba(255, 255, 255, 0.85);
     --accent: #3b82f6;
     --glass-blur: blur(16px);
@@ -42,7 +42,7 @@
     --input-bg: rgba(15, 23, 42, 0.6);
     --input-focus: #1e293b;
 
-    /* Dark Theme Floating Panel */
+    
     --panel-bg: rgba(30, 41, 59, 0.85);
     --glass-border: rgba(255, 255, 255, 0.08);
 
@@ -50,7 +50,7 @@
     --error-bg: rgba(239, 68, 68, 0.2);
 }
 
-/* Base styles remain */
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -69,10 +69,10 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Prevent scrolling, 3D is full screen */
+    
 }
 
-/* Topbar */
+
 .topbar {
     background: var(--surface);
     padding: 16px 32px;
@@ -117,13 +117,13 @@ body {
     font-weight: 500;
 }
 
-/* Container & Visual Area */
+
 .container {
     position: relative;
     width: 100%;
     height: 100vh;
     padding-top: 73px;
-    /* Height of topbar */
+    
 }
 
 .visual-area {
@@ -162,7 +162,7 @@ body {
     pointer-events: none;
 }
 
-/* Floating Panels */
+
 .floating-panel {
     position: absolute;
     background: var(--panel-bg);
@@ -200,7 +200,7 @@ body {
     width: 380px;
 }
 
-/* Typography & Forms */
+
 .section-title {
     font-size: 15px;
     font-weight: 700;
@@ -244,7 +244,7 @@ label {
     gap: 12px;
 }
 
-/* Selector Cards */
+
 .selector-cards {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -290,7 +290,7 @@ label {
     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
 }
 
-/* Custom Sliders */
+
 .slider-group {
     margin-bottom: 16px;
 }
@@ -331,7 +331,7 @@ label {
     margin-top: 6px;
 }
 
-/* Accordion */
+
 .custom-accordion {
     background: var(--input-bg);
     border: 1px solid var(--border);
@@ -350,7 +350,7 @@ label {
     display: none;
 }
 
-/* Material Swatches */
+
 .material-swatches {
     display: flex;
     gap: 12px;
@@ -373,7 +373,7 @@ label {
     justify-content: center;
 }
 
-/* Global tooltip appended to body */
+
 .global-tooltip {
     position: fixed;
     pointer-events: none;
@@ -405,7 +405,7 @@ label {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
-/* Toggle Switch (iOS style) */
+
 .toggles-group {
     display: flex;
     flex-direction: column;
@@ -497,7 +497,7 @@ input[type="number"]::-webkit-inner-spin-button {
     margin: 0;
 }
 
-/* Buttons */
+
 .btn {
     background: var(--text-main);
     color: var(--bg-page);
@@ -561,7 +561,7 @@ input[type="number"]::-webkit-inner-spin-button {
     border-color: #ef4444;
 }
 
-/* Stats and Totals */
+
 .stat-row {
     display: flex;
     justify-content: space-between;
@@ -624,7 +624,7 @@ input[type="number"]::-webkit-inner-spin-button {
     margin-left: 6px;
 }
 
-/* Live Receipt */
+
 .live-receipt {
     background: var(--input-bg);
     border: 1px solid var(--border);
@@ -658,7 +658,7 @@ input[type="number"]::-webkit-inner-spin-button {
     margin-bottom: 0;
 }
 
-/* 3D dimension badges */
+
 .dimension-badge {
     background: var(--text-main);
     color: var(--bg-page);
@@ -671,7 +671,7 @@ input[type="number"]::-webkit-inner-spin-button {
     white-space: nowrap;
     cursor: pointer;
     pointer-events: auto;
-    /* Made interactive */
+    
     transition: transform 0.2s, background 0.2s;
 }
 
@@ -681,7 +681,7 @@ input[type="number"]::-webkit-inner-spin-button {
     color: #fff;
 }
 
-/* Highlight Animation for Inputs */
+
 @keyframes highlightFlash {
     0% {
         background-color: rgba(59, 130, 246, 0.3);
@@ -696,7 +696,7 @@ input[type="number"]::-webkit-inner-spin-button {
     animation: highlightFlash 1s ease-out;
 }
 
-/* Dormer Item overrides */
+
 .dormer-item {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -728,7 +728,7 @@ input[type="number"]::-webkit-inner-spin-button {
     background: var(--error-bg);
 }
 
-/* Responsiveness */
+
 @media(max-width: 1024px) {
     body {
         overflow: auto;

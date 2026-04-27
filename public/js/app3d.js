@@ -422,31 +422,55 @@ window.build3DModel = function () {
             roofMeshes.push(dBaseMesh);
         });
     }
+    window.wasteGroupMeshes = [];
     if (window.wasteVisible) {
-        const wasteMeshes = [];
-        roofMeshes.forEach(mesh => {
-            if (mesh.material && mesh.material.color && mesh.material.color.getHex() !== 0xf8fafc) {
-                const wasteGeo = mesh.geometry.clone();
-                const wasteMat = new THREE.MeshBasicMaterial({
-                    color: 0xef4444,
-                    transparent: true,
-                    opacity: 0.15,
-                    side: THREE.DoubleSide
-                });
-                const wMesh = new THREE.Mesh(wasteGeo, wasteMat);
-                wMesh.position.copy(mesh.position);
-                wMesh.rotation.copy(mesh.rotation);
-                wMesh.scale.set(1.05, 1.05, 1.05);
-                scene.add(wMesh);
-                wasteMeshes.push(wMesh);
+        const wasteVal = parseFloat(document.getElementById('waste').value) || 0;
+        if (wasteVal > 0) {
+            let scaleMult = Math.sqrt(1 + wasteVal / 100);
+            if (scaleMult < 1.01) scaleMult = 1.01;
+            
+            const wasteMeshes = [];
+            roofMeshes.forEach(mesh => {
+                if (mesh.material && mesh.material.color && mesh.material.color.getHex() !== 0xf8fafc) {
+                    const wasteGeo = mesh.geometry.clone();
+                    
+                    const wasteMat = new THREE.MeshStandardMaterial({
+                        color: 0xff3b30,
+                        transparent: true,
+                        opacity: 0.25,
+                        side: THREE.DoubleSide,
+                        depthWrite: false,
+                        roughness: 0.1,
+                        metalness: 0.5,
+                        emissive: 0xff3b30,
+                        emissiveIntensity: 0.4
+                    });
+                    
+                    const wMesh = new THREE.Mesh(wasteGeo, wasteMat);
+                    wMesh.position.copy(mesh.position);
+                    wMesh.rotation.copy(mesh.rotation);
+                    
+                    wMesh.userData = { baseScale: scaleMult };
+                    wMesh.scale.set(scaleMult, scaleMult, scaleMult);
+                    wMesh.position.y += 0.03;
+                    
+                    scene.add(wMesh);
+                    wasteMeshes.push(wMesh);
+                    window.wasteGroupMeshes.push(wMesh);
 
-                const edges = new THREE.EdgesGeometry(wasteGeo);
-                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xef4444, opacity: 0.5, transparent: true }));
-                wMesh.add(line);
-                wasteMeshes.push(line);
-            }
-        });
-        roofMeshes = roofMeshes.concat(wasteMeshes);
+                    const edges = new THREE.EdgesGeometry(wasteGeo);
+                    const lineMat = new THREE.LineBasicMaterial({ 
+                        color: 0xff3b30, 
+                        opacity: 0.7, 
+                        transparent: true 
+                    });
+                    const line = new THREE.LineSegments(edges, lineMat);
+                    wMesh.add(line);
+                    wasteMeshes.push(line);
+                }
+            });
+            roofMeshes = roofMeshes.concat(wasteMeshes);
+        }
     }
 
     const maxDim = Math.max(len, wid);
@@ -462,14 +486,50 @@ window.build3DModel = function () {
         if (window.activeDragHandle !== window.resizeHandles[3]) window.resizeHandles[3].position.set(-baseWid / 2, 0, 0);
     }
 }
-function animate() {
+let lastCamPos = new THREE.Vector3();
+let lastCamRot = new THREE.Euler();
+window.needsRender = true;
+
+function animate(time) {
     requestAnimationFrame(animate);
+    
+    if (window.TWEEN) {
+        TWEEN.update(time);
+    }
+
     if (controls) controls.update();
+    
     if (window.needs3DUpdate && typeof window.build3DModel === 'function') {
         window.build3DModel();
+        window.needsRender = true;
     }
-    if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-        if (labelRenderer) labelRenderer.render(scene, camera);
+    
+    let isPulsing = false;
+    if (window.wasteVisible && window.wasteGroupMeshes && window.wasteGroupMeshes.length > 0) {
+        const pulseTime = Date.now() * 0.003;
+        const pulse = 1 + Math.sin(pulseTime) * 0.015;
+        window.wasteGroupMeshes.forEach(m => {
+            if (m.userData && m.userData.baseScale) {
+                const s = m.userData.baseScale * pulse;
+                m.scale.set(s, s, s);
+            }
+        });
+        isPulsing = true;
+    }
+    
+    let camChanged = !camera.position.equals(lastCamPos) || !camera.rotation.equals(lastCamRot);
+    if (camChanged) {
+        lastCamPos.copy(camera.position);
+        lastCamRot.copy(camera.rotation);
+    }
+
+    const hasActiveTweens = window.TWEEN && TWEEN.getAll().length > 0;
+
+    if (camChanged || isPulsing || window.needsRender || hasActiveTweens) {
+        if (renderer && scene && camera) {
+            renderer.render(scene, camera);
+            if (labelRenderer) labelRenderer.render(scene, camera);
+        }
+        window.needsRender = false;
     }
 }

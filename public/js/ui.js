@@ -183,10 +183,25 @@ function setupEventListeners() {
         });
     }
 
+    window.validateDormers = function() {
+        const len = parseFloat(lengthInput ? lengthInput.value : 10) || 10;
+        if (window.dormerConfig) {
+            let changed = false;
+            window.dormerConfig.forEach(dormer => {
+                const maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+                let pos = parseFloat(dormer.position);
+                if (pos > maxPos) { dormer.position = maxPos; changed = true; }
+                if (pos < -maxPos) { dormer.position = -maxPos; changed = true; }
+            });
+            if (changed) renderDormerUI();
+        }
+    };
+
     [lengthInput, widthInput].forEach(el => {
         if (!el) return;
         el.addEventListener('input', () => {
             window.needs3DUpdate = true;
+            window.validateDormers();
             renderDormerUI();
             recalculateNumbers();
         });
@@ -258,9 +273,24 @@ function setupEventListeners() {
 
             if (window.controls && window.camera) {
                 const maxDim = Math.max(10, 8);
-                window.controls.target.set(0, (Math.tan(30 * Math.PI / 180) * 4), 0);
-                window.camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
-                window.controls.update();
+                const targetY = Math.tan(30 * Math.PI / 180) * 4;
+                
+                if (window.TWEEN) {
+                    new TWEEN.Tween(window.camera.position)
+                        .to({ x: maxDim * 1.5, y: maxDim * 0.8, z: maxDim * 1.5 }, 1200)
+                        .easing(TWEEN.Easing.Cubic.Out)
+                        .start();
+                        
+                    new TWEEN.Tween(window.controls.target)
+                        .to({ x: 0, y: targetY, z: 0 }, 1200)
+                        .easing(TWEEN.Easing.Cubic.Out)
+                        .onUpdate(() => window.controls.update())
+                        .start();
+                } else {
+                    window.controls.target.set(0, targetY, 0);
+                    window.camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
+                    window.controls.update();
+                }
             }
         });
     }
