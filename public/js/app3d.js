@@ -405,17 +405,52 @@ window.build3DModel = function () {
         window.dormerConfig.forEach((dormer) => {
             const dHeight = Math.tan(angleDeg * Math.PI / 180) * (dormer.width / 2);
             const dShape = createGableShape(dormer.width, dHeight);
-            const dExtrusion = dormer.projection + (wid / 2);
+            
+            let dExtrusion, rotY, posX, posZ_val;
+            let bPosX, bPosZ, dBaseGeo;
+            
+            if (dormer.side === 'left') {
+                dExtrusion = dormer.projection + (wid / 2);
+                rotY = -Math.PI / 2;
+                posX = -(wid / 2) - (dormer.projection / 2) + (dExtrusion / 2) + 0.05;
+                posZ_val = dormer.position;
+                dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+                bPosX = posX + 0.1;
+                bPosZ = posZ_val;
+            } else if (dormer.side === 'front') {
+                dExtrusion = dormer.projection + (len / 2);
+                rotY = 0;
+                posX = dormer.position;
+                posZ_val = (len / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dormer.projection + (len / 2) - 0.2);
+                bPosX = posX;
+                bPosZ = posZ_val - 0.1;
+            } else if (dormer.side === 'back') {
+                dExtrusion = dormer.projection + (len / 2);
+                rotY = Math.PI;
+                posX = dormer.position;
+                posZ_val = -((len / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05);
+                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dormer.projection + (len / 2) - 0.2);
+                bPosX = posX;
+                bPosZ = posZ_val + 0.1;
+            } else { // right
+                dExtrusion = dormer.projection + (wid / 2);
+                rotY = Math.PI / 2;
+                posX = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+                posZ_val = dormer.position;
+                dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+                bPosX = posX - 0.1;
+                bPosZ = posZ_val;
+            }
+            
             const dRoof = createRoofMesh(dShape, dExtrusion, roofColor, matType);
-            dRoof.rotation.y = Math.PI / 2;
-            const posZ = dormer.position;
-            const shiftOut = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
-            dRoof.position.set(shiftOut, 0, posZ);
+            dRoof.rotation.y = rotY;
+            dRoof.position.set(posX, 0, posZ_val);
             scene.add(dRoof);
             roofMeshes.push(dRoof);
-            const dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
+            
             const dBaseMesh = new THREE.Mesh(dBaseGeo, baseMat);
-            dBaseMesh.position.set(shiftOut - 0.1, -2.5, posZ);
+            dBaseMesh.position.set(bPosX, -2.5, bPosZ);
             dBaseMesh.receiveShadow = true;
             dBaseMesh.castShadow = true;
             scene.add(dBaseMesh);

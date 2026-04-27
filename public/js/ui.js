@@ -185,10 +185,17 @@ function setupEventListeners() {
 
     window.validateDormers = function() {
         const len = parseFloat(lengthInput ? lengthInput.value : 10) || 10;
+        const wid = parseFloat(widthInput ? widthInput.value : 8) || 8;
         if (window.dormerConfig) {
             let changed = false;
             window.dormerConfig.forEach(dormer => {
-                const maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+                let maxPos;
+                if (dormer.side === 'front' || dormer.side === 'back') {
+                    maxPos = Math.max(0, (wid / 2) - (dormer.width / 2));
+                } else {
+                    maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+                }
+                
                 let pos = parseFloat(dormer.position);
                 if (pos > maxPos) { dormer.position = maxPos; changed = true; }
                 if (pos < -maxPos) { dormer.position = -maxPos; changed = true; }
@@ -211,7 +218,7 @@ function setupEventListeners() {
         addDormerBtn.addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('dormerSection').open = true;
-            window.dormerConfig.push({ width: 3, projection: 1.5, position: 0 });
+            window.dormerConfig.push({ width: 3, projection: 1.5, position: 0, side: 'right' });
             renderDormerUI();
             window.needs3DUpdate = true;
             recalculateNumbers();
@@ -306,13 +313,32 @@ function renderDormerUI() {
         el.className = 'dormer-item';
 
         const len = parseFloat(document.getElementById('length').value) || 10;
-        const maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+        const wid = parseFloat(document.getElementById('width').value) || 8;
+        let maxPos;
+        if (dormer.side === 'front' || dormer.side === 'back') {
+            maxPos = Math.max(0, (wid / 2) - (dormer.width / 2));
+        } else {
+            maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
+        }
+
+        const isHip = document.getElementById('roofShape').value === 'hip' || document.getElementById('roofShape').value === 'mansard';
 
         el.innerHTML = `
             <button class="btn-remove" onclick="removeDormer(${index})" title="Удалить">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             <div style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-main);">Врезка #${index + 1}</div>
+            
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Сторона крыши</label>
+                <select class="custom-select" onchange="updateDormer(${index}, 'side', this.value)" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main);">
+                    <option value="right" ${dormer.side === 'right' || !dormer.side ? 'selected' : ''}>Справа (+X)</option>
+                    <option value="left" ${dormer.side === 'left' ? 'selected' : ''}>Слева (-X)</option>
+                    ${isHip ? `<option value="front" ${dormer.side === 'front' ? 'selected' : ''}>Спереди (+Z)</option>` : ''}
+                    ${isHip ? `<option value="back" ${dormer.side === 'back' ? 'selected' : ''}>Сзади (-Z)</option>` : ''}
+                </select>
+            </div>
+
             <div class="grid-2">
                 <div class="form-group" style="margin-bottom:0;"><label>Ширина (м)</label><input type="number" step="0.5" min="1" max="10" value="${dormer.width}" oninput="updateDormer(${index}, 'width', this.value)"></div>
                 <div class="form-group" style="margin-bottom:0;"><label>Вынос (м)</label><input type="number" step="0.5" min="0.5" max="10" value="${dormer.projection}" oninput="updateDormer(${index}, 'projection', this.value)"></div>
@@ -327,7 +353,13 @@ function renderDormerUI() {
 }
 
 window.updateDormer = (index, key, val) => {
-    window.dormerConfig[index][key] = parseFloat(val);
+    if (key === 'side') {
+        window.dormerConfig[index][key] = val;
+        window.validateDormers();
+    } else {
+        window.dormerConfig[index][key] = parseFloat(val);
+    }
+    
     if (key !== 'position') renderDormerUI();
     else {
         const span = document.querySelector(`#dormersContainer .dormer-item:nth-child(${index + 1}) .slider-group span`);
