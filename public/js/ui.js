@@ -32,10 +32,14 @@ async function loadPrices() {
         if (matContainer) {
             matContainer.innerHTML = '';
             data.materials.forEach(m => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'swatch-wrapper';
+
                 const swatch = document.createElement('div');
                 swatch.className = 'swatch';
                 if (m.selected) {
                     swatch.classList.add('selected');
+                    wrapper.classList.add('selected');
                     matInput.value = m.price;
                 }
                 let colorHex = '#334155';
@@ -44,19 +48,19 @@ async function loadPrices() {
                     colorHex = '#' + parsedColor.toString(16).padStart(6, '0');
                 }
                 swatch.style.backgroundColor = colorHex;
-                swatch.setAttribute('data-tooltip', `${m.name} - ${m.price.toLocaleString('ru-RU')} ₸/м²`);
+                wrapper.setAttribute('data-tooltip', `${m.name} - ${m.price.toLocaleString('ru-RU')} ₸/м²`);
 
-                swatch.addEventListener('mouseenter', () => {
+                wrapper.addEventListener('mouseenter', () => {
                     const gt = document.getElementById('globalTooltip');
                     if (gt) {
-                        gt.textContent = swatch.getAttribute('data-tooltip');
-                        const rect = swatch.getBoundingClientRect();
+                        gt.textContent = wrapper.getAttribute('data-tooltip');
+                        const rect = wrapper.getBoundingClientRect();
                         gt.style.left = rect.left + rect.width / 2 + 'px';
                         gt.style.top = rect.top - 8 + 'px';
                         gt.classList.add('show');
                     }
                 });
-                swatch.addEventListener('mouseleave', () => {
+                wrapper.addEventListener('mouseleave', () => {
                     const gt = document.getElementById('globalTooltip');
                     if (gt) gt.classList.remove('show');
                 });
@@ -71,15 +75,31 @@ async function loadPrices() {
 
                 swatch.innerHTML = icons[m.id] || '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"/></svg>';
 
-                swatch.onclick = () => {
+                const label = document.createElement('div');
+                label.className = 'swatch-label';
+                
+                // Keep label short
+                let shortName = m.name;
+                if (shortName.includes('Металлочерепица')) shortName = shortName.replace('Металлочерепица', 'Металлочер.');
+                if (shortName.includes('Композитная черепица')) shortName = 'Комп. черепица';
+                if (shortName.includes('Мягкая кровля (Битумная)')) shortName = 'Мягкая кровля';
+
+                label.textContent = shortName;
+
+                wrapper.appendChild(swatch);
+                wrapper.appendChild(label);
+
+                wrapper.onclick = () => {
                     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+                    document.querySelectorAll('.swatch-wrapper').forEach(w => w.classList.remove('selected'));
                     swatch.classList.add('selected');
+                    wrapper.classList.add('selected');
                     matInput.value = m.price;
                     window.needs3DUpdate = true;
                     window.needsCalcUpdate = true;
                     recalculateNumbers();
                 };
-                matContainer.appendChild(swatch);
+                matContainer.appendChild(wrapper);
                 colorMap[m.price] = parseInt(m.color);
             });
         }
