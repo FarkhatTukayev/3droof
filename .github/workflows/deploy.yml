@@ -21,11 +21,8 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 21098
           script: |
-            echo "Checking directory..."
-            cd /home/tukabpyj/repositories/3droof || exit 1
-            echo "Pulling code..."
-            git pull origin main || exit 1
-            echo "Installing dependencies..."
-            /usr/local/bin/npm install --production || exit 1
-            echo "Restarting app..."
-            mkdir -p tmp && touch tmp/restart.txt
+            cd /home/tukabpyj/repositories/3droof
+            ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; git pull origin main'
+            npm install --production
+            mkdir -p tmp
+            touch tmp/restart.txt
