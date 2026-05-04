@@ -515,4 +515,127 @@ async function _recalculateNumbers() {
         document.getElementById('laborCost').textContent = 'Ошибка';
         document.getElementById('grandTotal').textContent = 'Ошибка';
     }
+    }
 }
+
+function downloadPdfEstimate() {
+    if (typeof html2pdf === 'undefined') {
+        alert('Библиотека для создания PDF еще загружается. Попробуйте через секунду.');
+        return;
+    }
+    
+    const btn = document.getElementById('downloadPdfBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Формирование...';
+    btn.disabled = true;
+
+    const roofShapeEl = document.getElementById('roofShape');
+    const roofShapeText = roofShapeEl.options[roofShapeEl.selectedIndex].text;
+    
+    const materialEl = document.getElementById('material');
+    const materialText = materialEl.options[materialEl.selectedIndex].text;
+
+    const html = `
+        <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #1e293b; background: #fff;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
+                <div>
+                    <h1 style="font-size: 28px; margin: 0; color: #0ea5e9;">RoofCalc PRO</h1>
+                    <p style="color: #64748b; margin: 5px 0 0 0;">Детализированная смета на устройство кровли</p>
+                </div>
+                <div style="text-align: right; color: #64748b; font-size: 14px;">
+                    Дата: ${new Date().toLocaleDateString('ru-RU')}<br>
+                    ID: ${Math.floor(Math.random() * 1000000)}
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 30px; font-size: 18px;">Параметры крыши</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600; width: 40%;">Конфигурация</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0;">${roofShapeText}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Материал покрытия</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0;">${materialText}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Полезная площадь</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0;">${document.getElementById('netAreaVal').innerText}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Общая площадь (с учетом отходов)</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0;">${document.getElementById('totalArea').innerText}</td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 30px; font-size: 18px; padding-bottom: 10px; border-bottom: 1px solid #cbd5e1;">Финансовый расчет</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr style="background: #f8fafc;">
+                    <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Наименование</th>
+                    <th style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">Сумма (₸)</th>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">Основное покрытие</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${document.getElementById('detCoverCost').innerText}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">Крепеж</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${document.getElementById('detScrewsCost').innerText}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">Пленки и мембраны</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${document.getElementById('detMemCost').innerText}</td>
+                </tr>
+                ${document.getElementById('detInsulationRow').style.display !== 'none' ? `
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">Утеплитель</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${document.getElementById('detInsCost').innerText}</td>
+                </tr>` : ''}
+                ${document.getElementById('detWoodRow').style.display !== 'none' ? `
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">Пиломатериалы (стропила, обрешетка)</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${document.getElementById('detWoodCost').innerText}</td>
+                </tr>` : ''}
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: 600;">Работа по монтажу</td>
+                    <td style="padding: 12px; text-align: right; border: 1px solid #e2e8f0; font-weight: 600;">${document.getElementById('laborCost').innerText}</td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 8px; text-align: right; font-size: 22px; font-weight: bold; color: #0f172a; border: 1px solid #e2e8f0;">
+                Итого к оплате: <span style="color: #0ea5e9;">${document.getElementById('grandTotal').innerText}</span>
+            </div>
+
+            <div style="margin-top: 40px; font-size: 12px; color: #94a3b8; text-align: center;">
+                Смета сгенерирована автоматически на сайте ${window.location.hostname || 'RoofCalc PRO'}<br>
+                Данный расчет является предварительным и может потребовать уточнения.
+            </div>
+        </div>
+    `;
+
+    const element = document.createElement('div');
+    element.innerHTML = html;
+    
+    const opt = {
+        margin:       0,
+        filename:     'RoofCalc_Smeta.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }).catch(err => {
+        console.error(err);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert("Произошла ошибка при создании PDF.");
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('downloadPdfBtn');
+    if (btn) btn.addEventListener('click', downloadPdfEstimate);
+});
