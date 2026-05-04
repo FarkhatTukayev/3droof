@@ -18,6 +18,7 @@ jobs:
           host: tukayev.it.com
           username: tukabpyj
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 21098
           script: |
             echo "Checking directory..."
