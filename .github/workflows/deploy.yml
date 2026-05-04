@@ -1,0 +1,27 @@
+name: Deploy to Namecheap
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: tukayev.it.com
+          username: tukabpyj
+          key: 280200870k
+          port: 21098
+          script: |
+            cd /home/tukabpyj/repositories/3droof
+            git pull origin main
+            npm install --production
+            mkdir -p tmp
+            touch tmp/restart.txt
