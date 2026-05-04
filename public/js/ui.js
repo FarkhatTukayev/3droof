@@ -638,21 +638,29 @@ function downloadPdfEstimate() {
 
     const element = document.createElement('div');
     element.innerHTML = html;
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+    element.style.width = '800px'; 
+    element.style.background = '#ffffff';
+    document.body.appendChild(element);
 
     const opt = {
-        margin: [0.3, 0.3, 0.3, 0.3], // top, left, bottom, right in inches
+        margin: [0.3, 0.3, 0.3, 0.3], 
         filename: 'RoofCalc_Smeta.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
+        document.body.removeChild(element);
         btn.innerHTML = originalText;
         btn.disabled = false;
     }).catch(err => {
         console.error(err);
+        if (element.parentNode) document.body.removeChild(element);
         btn.innerHTML = originalText;
         btn.disabled = false;
         alert("Произошла ошибка при создании PDF.");
