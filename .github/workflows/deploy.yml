@@ -20,8 +20,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 21098
           script: |
-            cd /home/tukabpyj/repositories/3droof
-            git pull origin main
-            npm install --production
-            mkdir -p tmp
-            touch tmp/restart.txt
+            echo "Checking directory..."
+            cd /home/tukabpyj/repositories/3droof || exit 1
+            echo "Pulling code..."
+            git pull origin main || exit 1
+            echo "Installing dependencies..."
+            /usr/local/bin/npm install --production || exit 1
+            echo "Restarting app..."
+            mkdir -p tmp && touch tmp/restart.txt
