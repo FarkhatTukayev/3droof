@@ -8,7 +8,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 function getPrices() {
-    const data = fs.readFileSync(path.join(__dirname, 'prices.json'), 'utf8');
+    const filePath = path.join(__dirname, 'prices.json');
+    if (!fs.existsSync(filePath)) {
+        console.error("Файл prices.json не найден по пути:", filePath);
+        return {};
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
 }
 app.get('/api/prices', (req, res) => {
