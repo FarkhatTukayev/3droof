@@ -144,6 +144,25 @@ app.post('/api/calculate', (req, res) => {
         detailedMaterials
     });
 });
+const { exec } = require('child_process');
+
+app.post('/api/webhook', (req, res) => {
+    const secret = req.query.secret;
+    if (secret !== '3droof_deploy_secret_2026') {
+        return res.status(403).send('Forbidden');
+    }
+
+    console.log('Webhook received! Starting deploy...');
+    exec('git pull origin main && mkdir -p tmp && touch tmp/restart.txt', (err, stdout, stderr) => {
+        if (err) {
+            console.error('Deploy error:', err);
+            return res.status(500).send('Deploy failed');
+        }
+        console.log('Deploy successful:', stdout);
+        res.status(200).send('Deploy successful');
+    });
+});
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
