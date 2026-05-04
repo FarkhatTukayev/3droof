@@ -168,7 +168,26 @@ function setupEventListeners() {
                         angleLabelText.textContent = roofShapeInput.value === 'mansard' ? 'Крутизна нижнего ската:' : 'Угол наклона:';
                     }
 
-                    dormerSection.style.display = (roofShapeInput.value === 'gable' || roofShapeInput.value === 'hip') ? 'block' : 'none';
+                    const isGableOrHip = roofShapeInput.value === 'gable' || roofShapeInput.value === 'hip';
+                    dormerSection.style.display = isGableOrHip ? 'block' : 'none';
+
+                    if (window.dormerConfig && window.dormerConfig.length > 0) {
+                        const isHip = roofShapeInput.value === 'hip' || roofShapeInput.value === 'mansard';
+                        let changed = false;
+                        if (!isHip) {
+                            window.dormerConfig.forEach(d => {
+                                if (d.side === 'front' || d.side === 'back') {
+                                    d.side = 'right';
+                                    changed = true;
+                                }
+                            });
+                        }
+                        if (changed) {
+                            window.validateDormers();
+                            renderDormerUI();
+                            window.needs3DUpdate = true;
+                        }
+                    }
                 }
 
                 if (window.needsCalcUpdate) recalculateNumbers();
@@ -189,6 +208,12 @@ function setupEventListeners() {
         if (window.dormerConfig) {
             let changed = false;
             window.dormerConfig.forEach(dormer => {
+                let maxWidth = (dormer.side === 'front' || dormer.side === 'back') ? wid : len;
+                if (dormer.width > maxWidth) {
+                    dormer.width = maxWidth;
+                    changed = true;
+                }
+
                 let maxPos;
                 if (dormer.side === 'front' || dormer.side === 'back') {
                     maxPos = Math.max(0, (wid / 2) - (dormer.width / 2));
@@ -315,9 +340,12 @@ function renderDormerUI() {
         const len = parseFloat(document.getElementById('length').value) || 10;
         const wid = parseFloat(document.getElementById('width').value) || 8;
         let maxPos;
+        let maxWidth;
         if (dormer.side === 'front' || dormer.side === 'back') {
+            maxWidth = wid;
             maxPos = Math.max(0, (wid / 2) - (dormer.width / 2));
         } else {
+            maxWidth = len;
             maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
         }
 
@@ -331,7 +359,7 @@ function renderDormerUI() {
             
             <div class="form-group" style="margin-bottom:12px;">
                 <label>Сторона крыши</label>
-                <select class="custom-select" onchange="updateDormer(${index}, 'side', this.value)" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main);">
+                <select class="custom-select" onchange="updateDormer(${index}, 'side', this.value)" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main);">
                     <option value="right" ${dormer.side === 'right' || !dormer.side ? 'selected' : ''}>Справа (+X)</option>
                     <option value="left" ${dormer.side === 'left' ? 'selected' : ''}>Слева (-X)</option>
                     ${isHip ? `<option value="front" ${dormer.side === 'front' ? 'selected' : ''}>Спереди (+Z)</option>` : ''}
@@ -340,8 +368,8 @@ function renderDormerUI() {
             </div>
 
             <div class="grid-2">
-                <div class="form-group" style="margin-bottom:0;"><label>Ширина (м)</label><input type="number" step="0.5" min="1" max="10" value="${dormer.width}" oninput="updateDormer(${index}, 'width', this.value)"></div>
-                <div class="form-group" style="margin-bottom:0;"><label>Вынос (м)</label><input type="number" step="0.5" min="0.5" max="10" value="${dormer.projection}" oninput="updateDormer(${index}, 'projection', this.value)"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Ширина (м)</label><input type="number" step="0.5" min="1" max="${maxWidth}" value="${dormer.width}" onchange="updateDormer(${index}, 'width', this.value)"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Вынос (м)</label><input type="number" step="0.5" min="0.5" max="10" value="${dormer.projection}" onchange="updateDormer(${index}, 'projection', this.value)"></div>
             </div>
             <div class="slider-group" style="margin-top:12px;">
                 <label>По оси: <span style="color:var(--text-main); font-weight:500;">${dormer.position} м</span></label>
@@ -357,7 +385,18 @@ window.updateDormer = (index, key, val) => {
         window.dormerConfig[index][key] = val;
         window.validateDormers();
     } else {
-        window.dormerConfig[index][key] = parseFloat(val);
+        let numVal = parseFloat(val) || 0;
+        if (key === 'width') {
+            const len = parseFloat(document.getElementById('length').value) || 10;
+            const wid = parseFloat(document.getElementById('width').value) || 8;
+            const side = window.dormerConfig[index].side;
+            const maxWidth = (side === 'front' || side === 'back') ? wid : len;
+            numVal = Math.min(Math.max(1, numVal), maxWidth);
+        } else if (key === 'projection') {
+            numVal = Math.max(0.5, numVal);
+        }
+        window.dormerConfig[index][key] = numVal;
+        window.validateDormers();
     }
     
     if (key !== 'position') renderDormerUI();

@@ -409,37 +409,38 @@ window.build3DModel = function () {
             let dExtrusion, rotY, posX, posZ_val;
             let bPosX, bPosZ, dBaseGeo;
             
+            let dBaseLen = dormer.projection + overhang;
             if (dormer.side === 'left') {
                 dExtrusion = dormer.projection + (wid / 2);
                 rotY = -Math.PI / 2;
-                posX = -(wid / 2) - (dormer.projection / 2) + (dExtrusion / 2) + 0.05;
+                posX = -dExtrusion / 2;
                 posZ_val = dormer.position;
-                dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
-                bPosX = posX + 0.1;
+                dBaseGeo = new THREE.BoxGeometry(dBaseLen, 5, dormer.width - 0.4);
+                bPosX = -baseWid / 2 - dBaseLen / 2;
                 bPosZ = posZ_val;
             } else if (dormer.side === 'front') {
                 dExtrusion = dormer.projection + (len / 2);
                 rotY = 0;
                 posX = dormer.position;
-                posZ_val = (len / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
-                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dormer.projection + (len / 2) - 0.2);
+                posZ_val = dExtrusion / 2;
+                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dBaseLen);
                 bPosX = posX;
-                bPosZ = posZ_val - 0.1;
+                bPosZ = baseLen / 2 + dBaseLen / 2;
             } else if (dormer.side === 'back') {
                 dExtrusion = dormer.projection + (len / 2);
                 rotY = Math.PI;
                 posX = dormer.position;
-                posZ_val = -((len / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05);
-                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dormer.projection + (len / 2) - 0.2);
+                posZ_val = -dExtrusion / 2;
+                dBaseGeo = new THREE.BoxGeometry(dormer.width - 0.4, 5, dBaseLen);
                 bPosX = posX;
-                bPosZ = posZ_val + 0.1;
+                bPosZ = -baseLen / 2 - dBaseLen / 2;
             } else { // right
                 dExtrusion = dormer.projection + (wid / 2);
                 rotY = Math.PI / 2;
-                posX = (wid / 2) + (dormer.projection / 2) - (dExtrusion / 2) - 0.05;
+                posX = dExtrusion / 2;
                 posZ_val = dormer.position;
-                dBaseGeo = new THREE.BoxGeometry(dormer.projection + (wid / 2) - 0.2, 5, dormer.width - 0.4);
-                bPosX = posX - 0.1;
+                dBaseGeo = new THREE.BoxGeometry(dBaseLen, 5, dormer.width - 0.4);
+                bPosX = baseWid / 2 + dBaseLen / 2;
                 bPosZ = posZ_val;
             }
             
