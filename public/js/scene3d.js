@@ -83,6 +83,81 @@ function getBumpMap(type) {
     textureCache[type] = tex;
     return tex;
 }
+
+function getMoonPhase() {
+    const synodic = 29.53058867;
+    const knownNewMoon = new Date('2000-01-06T18:14:00Z');
+    const now = new Date();
+    const diffDays = (now - knownNewMoon) / (1000 * 60 * 60 * 24);
+    const cycles = diffDays / synodic;
+    return cycles - Math.floor(cycles);
+}
+
+function createMoonTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(0, 0, 512, 512);
+    
+    for (let i = 0; i < 150; i++) {
+        let x = Math.random() * 512;
+        let y = Math.random() * 512;
+        let r = Math.random() * 15 + 2;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x - r*0.2, y - r*0.2, r*0.8, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fill();
+    }
+    return new THREE.CanvasTexture(canvas);
+}
+
+function addHouseDetails(baseMesh, len, wid) {
+    const details = new THREE.Group();
+    
+    // Дверь
+    const doorGeo = new THREE.BoxGeometry(1.2, 2.5, 0.1);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, -1.25, len/2 + 0.05); 
+    details.add(door);
+    
+    // Окна
+    const winGeo = new THREE.BoxGeometry(1.2, 1.5, 0.1);
+    const winMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0ea5e9, roughness: 0.1, metalness: 0.9, 
+        emissive: 0x0ea5e9, emissiveIntensity: 0.2 
+    });
+    
+    if (wid > 5) {
+        const w1 = new THREE.Mesh(winGeo, winMat);
+        w1.position.set(-wid/4, -0.5, len/2 + 0.05);
+        details.add(w1);
+        const w2 = new THREE.Mesh(winGeo, winMat);
+        w2.position.set(wid/4, -0.5, len/2 + 0.05);
+        details.add(w2);
+    }
+    
+    if (len > 5) {
+        const w3 = new THREE.Mesh(winGeo, winMat);
+        w3.rotation.y = Math.PI / 2;
+        w3.position.set(wid/2 + 0.05, -0.5, 0);
+        details.add(w3);
+        const w4 = new THREE.Mesh(winGeo, winMat);
+        w4.rotation.y = Math.PI / 2;
+        w4.position.set(-wid/2 - 0.05, -0.5, 0);
+        details.add(w4);
+    }
+    
+    baseMesh.add(details);
+}
+
 window.init3D = function () {
     const container = document.getElementById('canvas-container');
     camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 1000);
@@ -129,6 +204,21 @@ window.init3D = function () {
     groundObj.position.y = -2.51;
     groundObj.receiveShadow = true;
     scene.add(groundObj);
+
+    // Добавляем Луну
+    window.moonLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    scene.add(window.moonLight);
+    
+    const moonGeo = new THREE.SphereGeometry(15, 32, 32);
+    const moonMat = new THREE.MeshStandardMaterial({ 
+        map: createMoonTexture(),
+        roughness: 1.0,
+        metalness: 0.0
+    });
+    window.moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    window.moonMesh.position.set(-80, 60, -100);
+    scene.add(window.moonMesh);
+
     const handleGeo = new THREE.SphereGeometry(0.4, 32, 32);
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.1 });
     const handleZPos = new THREE.Mesh(handleGeo, handleMat.clone()); handleZPos.userData = { axis: 'z', sign: 1 };
@@ -366,6 +456,9 @@ window.build3DModel = function () {
     baseMesh.position.set(0, -2.5, 0);
     baseMesh.receiveShadow = true;
     baseMesh.castShadow = true;
+    
+    addHouseDetails(baseMesh, baseLen, baseWid);
+    
     scene.add(baseMesh);
     roofMeshes.push(baseMesh);
     const lengthDiv = document.createElement('div');
@@ -454,6 +547,7 @@ window.build3DModel = function () {
             dBaseMesh.position.set(bPosX, -2.5, bPosZ);
             dBaseMesh.receiveShadow = true;
             dBaseMesh.castShadow = true;
+            addHouseDetails(dBaseMesh, dBaseLen, dormer.width - 0.4);
             scene.add(dBaseMesh);
             roofMeshes.push(dBaseMesh);
         });
@@ -538,6 +632,25 @@ function animate(time) {
     if (window.needs3DUpdate && typeof window.build3DModel === 'function') {
         window.build3DModel();
         window.needsRender = true;
+    }
+    
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (window.moonMesh && window.moonLight) {
+        window.moonMesh.visible = isDark;
+        if (isDark) {
+            const phase = getMoonPhase();
+            const angle = (phase - 0.5) * Math.PI * 2;
+            const lx = window.moonMesh.position.x + Math.sin(angle) * 30;
+            const lz = window.moonMesh.position.z + Math.cos(angle) * 30;
+            window.moonLight.position.set(lx, window.moonMesh.position.y + 10, lz);
+            window.moonLight.target = window.moonMesh;
+            window.moonLight.intensity = 1.5;
+            
+            window.moonMesh.rotation.y += 0.001;
+            window.needsRender = true;
+        } else {
+            window.moonLight.intensity = 0;
+        }
     }
     
     let isPulsing = false;
