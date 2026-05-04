@@ -1,5 +1,7 @@
 ---
 deployment:
   tasks:
+    - export DEPLOYPATH=/home/tukabpyj/repositories/3droof/
+    - /bin/cp package.json $DEPLOYPATH
     - /bin/mkdir -p /home/tukabpyj/repositories/3droof/tmp
     - /bin/touch /home/tukabpyj/repositories/3droof/tmp/restart.txt
