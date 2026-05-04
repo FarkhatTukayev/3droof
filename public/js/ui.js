@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadPrices() {
     try {
-        const res = await fetch('/prices.json');
+        const res = await fetch('prices.json');
         window.currentPrices = await res.json();
         const data = window.currentPrices;
 
