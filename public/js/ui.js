@@ -545,9 +545,20 @@ function downloadPdfEstimate() {
         const mat = window.currentPrices.materials.find(m => m.price == materialPrice);
         if (mat) materialText = mat.name;
     }
+    let snapshotHtml = '';
+    if (window.renderer && window.scene && window.camera) {
+        window.renderer.render(window.scene, window.camera);
+        const dataUrl = window.renderer.domElement.toDataURL('image/jpeg', 0.95);
+        snapshotHtml = `
+            <div style="margin-bottom: 25px; text-align: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <img src="${dataUrl}" style="max-width: 100%; max-height: 300px; object-fit: contain; border-radius: 4px;">
+            </div>
+        `;
+    }
+
     const html = `
         <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #1e293b; background: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px;">
                 <div>
                     <h1 style="font-size: 28px; margin: 0; color: #0ea5e9;">RoofCalc PRO</h1>
                     <p style="color: #64748b; margin: 5px 0 0 0;">Детализированная смета на устройство кровли</p>
@@ -558,7 +569,9 @@ function downloadPdfEstimate() {
                 </div>
             </div>
             
-            <h3 style="margin-top: 30px; font-size: 18px;">Параметры крыши</h3>
+            ${snapshotHtml}
+            
+            <h3 style="margin-top: 20px; font-size: 18px;">Параметры крыши</h3>
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
                 <tr>
                     <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600; width: 40%;">Конфигурация</td>
