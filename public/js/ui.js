@@ -539,9 +539,12 @@ function downloadPdfEstimate() {
     };
     const roofShapeText = shapeMap[roofShapeEl.value] || roofShapeEl.value;
 
-    const materialEl = document.getElementById('material');
-    const materialText = materialEl.options[materialEl.selectedIndex].text;
-
+    const materialPrice = parseFloat(document.getElementById('material').value);
+    let materialText = 'Покрытие крыши';
+    if (window.currentPrices && window.currentPrices.materials) {
+        const mat = window.currentPrices.materials.find(m => m.price == materialPrice);
+        if (mat) materialText = mat.name;
+    }
     const html = `
         <div style="padding: 40px; font-family: 'Inter', sans-serif; color: #1e293b; background: #fff;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
