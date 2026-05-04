@@ -118,15 +118,17 @@ function createMoonTexture() {
     return new THREE.CanvasTexture(canvas);
 }
 
-function addHouseDetails(baseMesh, len, wid) {
+function addHouseDetails(baseMesh, len, wid, isDormer = false) {
     const details = new THREE.Group();
     
-    // Дверь
-    const doorGeo = new THREE.BoxGeometry(1.2, 2.5, 0.1);
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
-    const door = new THREE.Mesh(doorGeo, doorMat);
-    door.position.set(0, -1.25, len/2 + 0.05); 
-    details.add(door);
+    // Дверь (только на основном здании)
+    if (!isDormer) {
+        const doorGeo = new THREE.BoxGeometry(1.2, 2.5, 0.1);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, -1.25, len/2 + 0.05); 
+        details.add(door);
+    }
     
     // Окна
     const winGeo = new THREE.BoxGeometry(1.2, 1.5, 0.1);
@@ -135,16 +137,18 @@ function addHouseDetails(baseMesh, len, wid) {
         emissive: 0x0ea5e9, emissiveIntensity: 0.2 
     });
     
-    if (wid > 5) {
+    if (wid > 4) {
         const w1 = new THREE.Mesh(winGeo, winMat);
         w1.position.set(-wid/4, -0.5, len/2 + 0.05);
         details.add(w1);
-        const w2 = new THREE.Mesh(winGeo, winMat);
-        w2.position.set(wid/4, -0.5, len/2 + 0.05);
-        details.add(w2);
+        if (wid > 6) {
+            const w2 = new THREE.Mesh(winGeo, winMat);
+            w2.position.set(wid/4, -0.5, len/2 + 0.05);
+            details.add(w2);
+        }
     }
     
-    if (len > 5) {
+    if (len > 5 && !isDormer) {
         const w3 = new THREE.Mesh(winGeo, winMat);
         w3.rotation.y = Math.PI / 2;
         w3.position.set(wid/2 + 0.05, -0.5, 0);
@@ -547,7 +551,15 @@ window.build3DModel = function () {
             dBaseMesh.position.set(bPosX, -2.5, bPosZ);
             dBaseMesh.receiveShadow = true;
             dBaseMesh.castShadow = true;
-            addHouseDetails(dBaseMesh, dBaseLen, dormer.width - 0.4);
+            
+            let dLen = dBaseLen;
+            let dWid = dormer.width - 0.4;
+            if (dormer.side === 'left' || dormer.side === 'right') {
+                dLen = dormer.width - 0.4;
+                dWid = dBaseLen;
+            }
+            addHouseDetails(dBaseMesh, dLen, dWid, true);
+            
             scene.add(dBaseMesh);
             roofMeshes.push(dBaseMesh);
         });
