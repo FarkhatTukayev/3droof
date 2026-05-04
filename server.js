@@ -6,7 +6,15 @@ const fs = require('fs');
 const path = require('path');
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 function getPrices() {
     const filePath = path.join(__dirname, 'prices.json');
     if (!fs.existsSync(filePath)) {
