@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ru">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -11,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DragControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 </head>
+
 <body>
     <header class="topbar">
         <div class="brand">
@@ -33,13 +35,13 @@
     </header>
 
     <div class="container">
-        
+
         <aside id="left-panel" class="floating-panel left-panel">
             <div>
                 <div class="section-title">
                     <span>Инженерный узел (Конструкция)</span>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Форма крыши</label>
                     <div class="selector-cards" id="roofShapeCards">
@@ -78,12 +80,14 @@
                     </div>
                     <div class="slider-group">
                         <label>Свесы кровли: <span id="overhangVal" class="val-highlight">0.5</span> м</label>
-                        <input id="overhang" type="range" class="custom-slider" min="0" max="1.5" step="0.1" value="0.5">
+                        <input id="overhang" type="range" class="custom-slider" min="0" max="1.5" step="0.1"
+                            value="0.5">
                     </div>
                 </div>
 
                 <div class="slider-group" id="angleGroup">
-                    <label><span id="angleLabelText">Угол наклона:</span> <span id="angleVal" class="val-highlight">30</span>°</label>
+                    <label><span id="angleLabelText">Угол наклона:</span> <span id="angleVal"
+                            class="val-highlight">30</span>°</label>
                     <input id="angle" type="range" class="custom-slider" min="10" max="60" step="1" value="30">
                     <div class="range-labels">
                         <span>Пологая</span>
@@ -92,13 +96,14 @@
                 </div>
             </div>
 
-            
+
             <details id="dormerSection" class="custom-accordion">
                 <summary class="section-title" style="cursor: pointer; margin-bottom: 0;">
                     <span>Врезки и окна ▼</span>
                 </summary>
                 <div class="accordion-content">
-                    <div style="font-size: 13px; color: var(--text-muted); margin: 12px 0; line-height: 1.5; display:flex; justify-content:space-between; align-items:center;">
+                    <div
+                        style="font-size: 13px; color: var(--text-muted); margin: 12px 0; line-height: 1.5; display:flex; justify-content:space-between; align-items:center;">
                         Опциональные конструкции.
                         <button id="addDormerBtn" class="btn btn-outline btn-small" type="button">+ Врезка</button>
                     </div>
@@ -107,18 +112,18 @@
             </details>
         </aside>
 
-        
+
         <aside id="right-panel" class="floating-panel right-panel">
             <div>
                 <div class="section-title">
                     <span>Коммерческий узел (Смета)</span>
                 </div>
-                
-                
+
+
                 <div class="form-group">
                     <label>Покрытие крыши</label>
                     <div class="material-swatches" id="materialSwatchesContainer">
-                        
+
                     </div>
                     <input type="hidden" id="material" value="4800">
                 </div>
@@ -128,7 +133,8 @@
                         <label>Запас (отход), %</label>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <input id="waste" type="number" min="0" max="50" value="15" style="width: 70px;">
-                            <button id="showWasteBtn" class="btn-micro" title="Показать обрезки на 3D" style="height: 42px; width: 42px;">👁️</button>
+                            <button id="showWasteBtn" class="btn-micro" title="Показать обрезки на 3D"
+                                style="height: 42px; width: 42px;">👁️</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -141,7 +147,7 @@
                     </div>
                 </div>
 
-                
+
                 <div class="toggles-group" style="margin-top: 16px;">
                     <label class="toggle-row">
                         <span style="font-size: 13px; font-weight: 500;">Утепление 200мм (Минвата)</span>
@@ -159,7 +165,7 @@
                     </label>
                 </div>
 
-                
+
                 <div class="stat-row" style="margin-top: 24px;">
                     <span class="stat-label">Площадь скатов (чистая)</span>
                     <span class="stat-value" id="netAreaVal">— м²</span>
@@ -175,12 +181,14 @@
 
                 <div class="total-divider"></div>
                 <div class="total-label">Итоговая смета</div>
-                <div class="total-sum" id="totalSumContainer" style="cursor: pointer;" title="Кликните для детализации чека">
+                <div class="total-sum" id="totalSumContainer" style="cursor: pointer;"
+                    title="Кликните для детализации чека">
                     <span id="grandTotal">—</span> <span class="currency">₸</span>
-                    <span style="font-size: 16px; color: var(--text-muted); margin-left:8px;" id="receiptChevron">▼</span>
+                    <span style="font-size: 16px; color: var(--text-muted); margin-left:8px;"
+                        id="receiptChevron">▼</span>
                 </div>
 
-                
+
                 <div id="detailedMaterialsBlock" class="live-receipt" style="display: none;">
                     <div class="receipt-row">
                         <span style="color: var(--text-muted)">Материалы крыши</span>
@@ -190,8 +198,10 @@
                         <span style="color: var(--text-muted)">Монтаж крыши</span>
                         <span id="laborCost" style="font-weight: 500;">— ₸</span>
                     </div>
-                    <div style="height: 1px; background: var(--border); margin: 8px 0; border-top: 1px dashed var(--border);"></div>
-                    
+                    <div
+                        style="height: 1px; background: var(--border); margin: 8px 0; border-top: 1px dashed var(--border);">
+                    </div>
+
                     <div class="receipt-row">
                         <span style="color: var(--text-muted)">Покрытие</span>
                         <span id="detCoverCost" style="font-weight: 500; color: var(--text-main);">—</span>
@@ -209,22 +219,24 @@
                         <span id="detInsCost" style="font-weight: 500; color: var(--text-main);">—</span>
                     </div>
                     <div id="detWoodRow" class="receipt-row" style="display: none;">
-                        <span style="color: var(--text-muted)">Пиломатериалы (<span id="detWoodVolume">—</span> м³)</span>
+                        <span style="color: var(--text-muted)">Пиломатериалы (<span id="detWoodVolume">—</span>
+                            м³)</span>
                         <span id="detWoodCost" style="font-weight: 500; color: var(--text-main);">—</span>
                     </div>
                 </div>
             </div>
         </aside>
 
-        
+
         <main class="visual-area">
             <div id="canvas-container"></div>
             <div class="canvas-hint">Удержание ЛКМ: вращение • Колесико: зум • Клик по метке: фокус размера</div>
         </main>
     </div>
 
-    <script src="js/calcEngine.js"></script>
-    <script src="js/app3d.js"></script>
-    <script src="js/ui.js"></script>
+    <script src="js/calcEngine.js" defer></script>
+    <script src="js/app3d.js" defer></script>
+    <script src="js/ui.js" defer></script>
 </body>
+
 </html>
