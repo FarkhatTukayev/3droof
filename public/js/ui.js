@@ -21,8 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadPrices() {
     try {
-        const res = await fetch('/api/prices');
-        const data = await res.json();
+        const res = await fetch('/prices.json');
+        window.currentPrices = await res.json();
+        const data = window.currentPrices;
 
         const matContainer = document.getElementById('materialSwatchesContainer');
         const matInput = document.getElementById('material');
@@ -442,15 +443,12 @@ async function _recalculateNumbers() {
     if (wastePctDisplay) wastePctDisplay.textContent = payload.wastePct;
 
     try {
-        const res = await fetch('/api/calculate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        if (!window.currentPrices) {
+            console.warn("Prices not loaded yet, skipping calculation.");
+            return;
+        }
 
-        if (!res.ok) throw new Error("API Network Error");
-
-        const data = await res.json();
+        const data = window.RoofCalcEngine.calculate(payload, window.currentPrices);
 
         document.getElementById('netAreaVal').textContent = `${data.netArea} м²`;
         document.getElementById('totalArea').textContent = `${data.totalArea} м²`;
@@ -486,7 +484,7 @@ async function _recalculateNumbers() {
             }
         }
     } catch (e) {
-        console.error("Calculation fetch failed:", e);
+        console.error("Calculation failed:", e);
         document.getElementById('netAreaVal').textContent = 'Ошибка';
         document.getElementById('totalArea').textContent = 'Ошибка';
         document.getElementById('materialCost').textContent = 'Ошибка';
