@@ -444,6 +444,14 @@ window.recalculateNumbers = function () {
 };
 
 async function _recalculateNumbers() {
+    // --- ЗАЩИТА ОТ ГОНКИ СКРИПТОВ ---
+    if (typeof window.RoofCalcEngine === 'undefined') {
+        console.warn("Калькулятор еще грузится, ждем 100мс...");
+        setTimeout(_recalculateNumbers, 100); // Перезапускаем функцию чуть позже
+        return;
+    }
+    // --------------------------------
+
     const payload = {
         length: parseFloat(document.getElementById('length').value) || 0,
         width: parseFloat(document.getElementById('width').value) || 0,
