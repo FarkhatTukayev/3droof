@@ -77,7 +77,7 @@ async function loadPrices() {
 
                 const label = document.createElement('div');
                 label.className = 'swatch-label';
-                
+
                 // Keep label short
                 let shortName = m.name;
                 if (shortName.includes('Металлочерепица')) shortName = shortName.replace('Металлочерепица', 'Металлочер.');
@@ -223,7 +223,7 @@ function setupEventListeners() {
         });
     }
 
-    window.validateDormers = function() {
+    window.validateDormers = function () {
         const len = parseFloat(lengthInput ? lengthInput.value : 10) || 10;
         const wid = parseFloat(widthInput ? widthInput.value : 8) || 8;
         if (window.dormerConfig) {
@@ -241,7 +241,7 @@ function setupEventListeners() {
                 } else {
                     maxPos = Math.max(0, (len / 2) - (dormer.width / 2));
                 }
-                
+
                 let pos = parseFloat(dormer.position);
                 if (pos > maxPos) { dormer.position = maxPos; changed = true; }
                 if (pos < -maxPos) { dormer.position = -maxPos; changed = true; }
@@ -327,13 +327,13 @@ function setupEventListeners() {
             if (window.controls && window.camera) {
                 const maxDim = Math.max(10, 8);
                 const targetY = Math.tan(30 * Math.PI / 180) * 4;
-                
+
                 if (window.TWEEN) {
                     new TWEEN.Tween(window.camera.position)
                         .to({ x: maxDim * 1.5, y: maxDim * 0.8, z: maxDim * 1.5 }, 1200)
                         .easing(TWEEN.Easing.Cubic.Out)
                         .start();
-                        
+
                     new TWEEN.Tween(window.controls.target)
                         .to({ x: 0, y: targetY, z: 0 }, 1200)
                         .easing(TWEEN.Easing.Cubic.Out)
@@ -419,7 +419,7 @@ window.updateDormer = (index, key, val) => {
         window.dormerConfig[index][key] = numVal;
         window.validateDormers();
     }
-    
+
     if (key !== 'position') renderDormerUI();
     else {
         const span = document.querySelector(`#dormersContainer .dormer-item:nth-child(${index + 1}) .slider-group span`);
@@ -515,15 +515,15 @@ async function _recalculateNumbers() {
         document.getElementById('laborCost').textContent = 'Ошибка';
         document.getElementById('grandTotal').textContent = 'Ошибка';
     }
-    }
 }
+
 
 function downloadPdfEstimate() {
     if (typeof html2pdf === 'undefined') {
         alert('Библиотека для создания PDF еще загружается. Попробуйте через секунду.');
         return;
     }
-    
+
     const btn = document.getElementById('downloadPdfBtn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '⏳ Формирование...';
@@ -531,7 +531,7 @@ function downloadPdfEstimate() {
 
     const roofShapeEl = document.getElementById('roofShape');
     const roofShapeText = roofShapeEl.options[roofShapeEl.selectedIndex].text;
-    
+
     const materialEl = document.getElementById('material');
     const materialText = materialEl.options[materialEl.selectedIndex].text;
 
@@ -615,13 +615,13 @@ function downloadPdfEstimate() {
 
     const element = document.createElement('div');
     element.innerHTML = html;
-    
+
     const opt = {
-        margin:       0,
-        filename:     'RoofCalc_Smeta.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        margin: 0,
+        filename: 'RoofCalc_Smeta.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
