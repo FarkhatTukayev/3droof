@@ -530,7 +530,14 @@ function downloadPdfEstimate() {
     btn.disabled = true;
 
     const roofShapeEl = document.getElementById('roofShape');
-    const roofShapeText = roofShapeEl.options[roofShapeEl.selectedIndex].text;
+    const shapeMap = {
+        'gable': 'Двускатная',
+        'hip': 'Вальмовая',
+        'flat': 'Плоская',
+        'shed': 'Односкатная',
+        'mansard': 'Мансардная'
+    };
+    const roofShapeText = shapeMap[roofShapeEl.value] || roofShapeEl.value;
 
     const materialEl = document.getElementById('material');
     const materialText = materialEl.options[materialEl.selectedIndex].text;
